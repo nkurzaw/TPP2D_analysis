@@ -3,8 +3,12 @@
 This repository contains code to reproduce analyses performed by Kurzawa et al. 2020 to showcase the usage of the R package [`TPP2D`](https://bioconductor.org/packages/release/bioc/html/TPP2D.html) ([github](https://github.com/nkurzaw/TPP2D)) for analysis of 2D-Thermal proteome profiling experiments (2D-TPP) (Becher et al., 2016; Mateus et al., 2020).      
 
 ## Overview
-- Panobinostat HepG2 in-cell experiment:
-    - Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016
+- Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016:
+    - Panobinostat_dataset_re-analysis.Rmd
+    - Panobinostat_dataset_re-analysis.pdf
+- JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018:
+    - JQ1_dataset_re-analysis.Rmd
+    - JQ1_dataset_re-analysis.pdf
 
 ## References
 
