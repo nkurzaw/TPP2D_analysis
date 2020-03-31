@@ -1,0 +1,318 @@
+---
+title: "Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016"
+author:
+- name: Nils Kurzawa
+  affiliation: 
+  - European Molecular Biology Laboratory (EMBL), Genome Biology Unit
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+package: TPP2D
+output:
+  BiocStyle::pdf_document:
+vignette: >
+    %\VignetteIndexEntry{Vignette Title}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8} 
+bibliography: ../bibliography.bib
+csl: ../cell.csl
+header-includes: 
+- \usepackage{placeins}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+reRun <- FALSE
+```
+
+# Step-by-step walk through the anlysis
+
+```{r eval = FALSE}
+# This script uses the development version of TPP2D
+if(require("BiocManager"))
+  install.packages("BiocManager")
+BiocManager::install("nkurzaw/TPP2D")
+```
+
+Load required libraries
+
+```{r}
+library(TPP2D)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readxl)
+```
+
+Define plot style
+```{r}
+theme_paper <- theme_bw(base_size = 6) +
+  theme(legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        panel.background = element_blank(), 
+        panel.grid.major = element_line(colour = "grey92", size = 0.25),
+        panel.grid.minor = element_line(colour = "grey92", size = 0.15),
+        panel.border = element_blank(), 
+        strip.background = element_blank(), 
+        plot.background = element_blank(), 
+        complete = TRUE,
+        axis.line = element_line(color = "black", size = 0.25),
+        text = element_text(size = 7),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6))
+```
+
+Download the supplementary excel table (Supplementary Dataset S1) by @Becher2016
+
+```{r}
+if(!file.exists("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx")){
+download.file(
+  url = "https://static-content.springer.com/esm/art%3A10.1038%2Fnchembio.2185/MediaObjects/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx",
+  destfile = "41589_2016_BFnchembio2185_MOESM254_ESM.xlsx") 
+}
+  
+```
+
+
+Read in the data and reformat to a data frame as would be obtained after import of the raw data:
+
+```{r}
+pano_cell_raw <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
+                           sheet = 1, skip = 1) %>% 
+  dplyr::select(representative,
+                clustername,
+                experiment = ms_experiment,
+                qupm,
+                qusm,
+                temperature,
+                matches("sumionarea"),
+                -matches("total"),
+                matches("rel_fc_protein"),
+                -matches("transformed"),
+                -matches("orig"),
+                -matches("log2rel"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+pano_cell_fil <- resolveAmbiguousProteinNames(pano_cell_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+pano_cell_df <- recomputeSignalFromRatios(pano_cell_fil)
+```
+
+Compute null and alternative model fits and extract parameters
+```{r eval=reRun}
+pano_params_df <- getModelParamsDf(pano_cell_df, maxit = 500)
+saveRDS(pano_params_df, file = "../pre_run_data/pano_params_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pano_params_df <- readRDS("../pre_run_data/pano_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+pano_fstat_df <- computeFStatFromParams(pano_params_df)
+```
+
+Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+```{r eval=reRun}
+set.seed(12, kind = "L'Ecuyer-CMRG")
+pano_null_df <- bootstrapNullAlternativeModel(
+  df = pano_cell_df, params_df = pano_params_df, 
+  maxit = 500, B = 100,
+  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
+  verbose = FALSE)
+saveRDS(pano_null_df, file = "../pre_run_data/pano_null_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pano_null_df <- readRDS("../pre_run_data/pano_null_df.rds")
+```
+
+Compute FDR and find hits:
+
+```{r}
+pano_fdr_df <- getFDR(df_out = pano_fstat_df,
+                     df_null = pano_null_df)
+  
+pano_hits_df <- findHits(pano_fdr_df, alpha = 0.1)
+```
+
+```{r}
+ggplot(pano_fdr_df %>% 
+           filter(dataset == "true") %>% 
+           mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
+                                    slopeH1 < 0 ~ "destabilized protein")), 
+       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+  geom_point(color = "gray", alpha = 0.5, size = 1) + 
+  geom_point(aes(color = group), alpha = 0.5, 
+             size = 1,
+             data = pano_hits_df %>% 
+                 mutate(group = case_when(
+                     slopeH1 > 0 ~ "stabilized protein",
+                     slopeH1 < 0 ~ "destabilized protein"))) + 
+  ggrepel::geom_text_repel(
+    aes(label = clustername),
+    data = filter(pano_hits_df, clustername %in% 
+                    c("HDAC1", "HDAC2",
+                      "HDAC6", "PAH",
+                      "TTC38", "FADS1",
+                      "FADS2", "MIER1",
+                      "BRD3", "SCCPDH",
+                      "ZNF148", "DHRS1",
+                      "ZNF384")),
+    size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
+  scale_color_manual("", values = c("orange", "steelblue")) +
+  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
+       y = expression('asinh('*italic(F)*' statistic)')) +
+  ggtitle("Panobinostat in-cell experiment") +
+  coord_cartesian(xlim = c(-12.5, 7.5)) +
+  theme_paper +
+  theme(legend.position = "bottom")
+```
+
+
+```{r}
+ggplot(pano_fdr_df %>% 
+           filter(dataset == "true") %>% 
+           mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
+                                    slopeH1 < 0 ~ "destabilized protein")), 
+       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+  geom_point(color = "gray", alpha = 0.5, size = 1) + 
+  geom_point(aes(color = group), alpha = 0.5, 
+             size = 1,
+             data = pano_hits_df %>% 
+                 mutate(group = case_when(
+                     slopeH1 > 0 ~ "stabilized protein",
+                     slopeH1 < 0 ~ "destabilized protein"))) + 
+  ggrepel::geom_text_repel(
+    aes(label = clustername),
+    data = filter(pano_hits_df, clustername %in% 
+                    c("HDAC1", "HDAC2",
+                      "HDAC6", "PAH",
+                      "TTC38", "FADS1",
+                      "FADS2", "MIER1",
+                      "BRD3", "SCCPDH",
+                      "ZNF148", "DHRS1",
+                      "ZNF384")),
+    size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
+  scale_color_manual("", values = c("orange", "steelblue")) +
+  facet_wrap(~nObsRound, scales = "free", ncol = 5) +
+  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
+       y = expression('asinh('*italic(F)*' statistic)')) +
+  ggtitle("Panobinostat in-cell experiment") +
+  coord_cartesian(xlim = c(-12.5, 7.5)) +
+  theme_paper +
+  theme(legend.position = "bottom")
+
+```
+
+```{r}
+library(gplots)
+
+pano_thres_df <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
+                          sheet = 1, skip = 1) %>% 
+  filter(qupm > 1)
+
+#stabilization
+venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 > 0))$clustername,
+          "threshold-based" = (pano_thres_df %>% filter(protein_stabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
+
+```
+
+```{r}
+#destabilization
+venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 < 0))$clustername,
+          "threshold-based" = (pano_thres_df %>% filter(protein_destabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
+```
+
+
+HDAC6 profile
+
+```{r}
+hdac6_fit <- plot2dTppFit(pano_cell_df, "HDAC6", "H1")$data
+
+hdac6_df <- filter(pano_cell_df, clustername == "HDAC6")
+
+ggplot(hdac6_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = hdac6_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(Panobinostat conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("HDAC6, alternative model") +
+  theme_paper
+```
+
+Other profiles for comparison:
+```{r}
+hdac1_fit <- plot2dTppFit(pano_cell_df, "HDAC1", "H1")$data
+
+hdac1_df <- filter(pano_cell_df, clustername == "HDAC1")
+
+ggplot(hdac1_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = hdac1_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(Panobinostat conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("HDAC1, alternative model") +
+  theme_paper
+```
+
+PAH
+```{r}
+pah_fit <- plot2dTppFit(pano_cell_df, "PAH", "H1")$data
+
+pah_df <- filter(pano_cell_df, clustername == "PAH")
+
+ggplot(pah_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = pah_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(Panobinostat conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("PAH, alternative model") +
+  theme_paper
+```
+
+```{r}
+fads1_fit <- plot2dTppFit(pano_cell_df, "FADS1", "H1")$data
+
+fads1_df <- filter(pano_cell_df, clustername == "FADS1")
+
+ggplot(fads1_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = fads1_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(Panobinostat conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("FADS1, alternative model") +
+  theme_paper
+```
+
+```{r}
+sessionInfo()
+```
+
+
+# References
