@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 reRun <- FALSE
 ```
 
-# Step-by-step walk through the anlysis
+# Step-by-step walk through the `TPP2D` analysis
 
 ```{r eval = FALSE}
 # This script uses the development version of TPP2D
@@ -40,6 +40,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(readxl)
+library(gplots)
 ```
 
 Define plot style
@@ -208,9 +209,9 @@ ggplot(jq1_fdr_df %>%
 
 ```
 
-```{r}
-library(gplots)
+# Compare to previous analysis
 
+```{r}
 jq1_thres_df <- read_xlsx("Savitski_et_al_Figure_3/Supplementary Dataset 2_2D-TPP.xlsx", sheet = 3, skip = 1) %>% 
   filter(QUPM > 1)
 
@@ -226,8 +227,9 @@ venn(list("DLPTP" = (jq1_hits_df %>% filter(slopeH1 < 0))$clustername,
           "threshold-based" = (jq1_thres_df %>% filter(protein_destabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(`protein name`)))$`protein name`))
 ```
 
+# Plot example profiles
 
-BRD4 profile
+BRD4
 
 ```{r}
 brd4_fit <- plot2dTppFit(jq1_lys_df, "BRD4", "H1")$data
@@ -245,6 +247,23 @@ ggplot(brd4_fit, aes(log_conc, y_hat)) +
   theme_paper
 ```
 
+BRD3
+
+```{r}
+brd3_fit <- plot2dTppFit(jq1_lys_df, "BRD3", "H1")$data
+
+brd3_df <- filter(jq1_lys_df, clustername == "BRD3")
+
+ggplot(brd3_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = brd3_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(JQ1 conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("BRD4, alternative model") +
+  theme_paper
+```
 
 ```{r}
 sessionInfo()

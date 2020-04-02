@@ -40,6 +40,8 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(readxl)
+library(gplots)
+
 ```
 
 Define plot style
@@ -222,9 +224,9 @@ ggplot(pano_fdr_df %>%
 
 ```
 
-```{r}
-library(gplots)
+# Compare to previous analysis
 
+```{r}
 pano_thres_df <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
                           sheet = 1, skip = 1) %>% 
   filter(qupm > 1)
@@ -241,8 +243,9 @@ venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 < 0))$clustername,
           "threshold-based" = (pano_thres_df %>% filter(protein_destabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
 ```
 
+# Plot example profiles
 
-HDAC6 profile
+HDAC6
 
 ```{r}
 hdac6_fit <- plot2dTppFit(pano_cell_df, "HDAC6", "H1")$data
