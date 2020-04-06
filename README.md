@@ -9,6 +9,9 @@ This repository contains code to reproduce analyses performed by Kurzawa et al. 
 - JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018:
     - JQ1_dataset_re-analysis.Rmd
     - JQ1_dataset_re-analysis.pdf
+- GTP_Jurkat_gelfil_lysate_2DTPP
+    - GTP_analysis.Rmd
+    - GTP_analysis.pdf
 - Benchmark_on_synthetic_dataset
     - benchmark.Rmd
 
