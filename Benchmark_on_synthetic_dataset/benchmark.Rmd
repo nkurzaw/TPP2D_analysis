@@ -113,6 +113,55 @@ jq1_lys_df <- recomputeSignalFromRatios(jq1_lys_fil)
 ```
 
 ```{r}
+pano_raw <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
+                           sheet = 1, skip = 1) %>% 
+  dplyr::select(representative,
+                clustername,
+                experiment = ms_experiment,
+                qupm,
+                qusm,
+                temperature,
+                matches("sumionarea"),
+                -matches("total"),
+                matches("rel_fc_protein"),
+                -matches("transformed"),
+                -matches("orig"),
+                -matches("log2rel"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+pano_fil <- resolveAmbiguousProteinNames(pano_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+pano_df <- recomputeSignalFromRatios(pano_fil)
+```
+
+```{r}
+atp_df <- readRDS("../pre_run_data/atp_df.rds")
+amp_df <- readRDS("../pre_run_data/amp_df.rds")
+```
+
+```{r}
+atp_fil <- TPP2D:::.independentFilter(atp_df, fcThres = 1.25)
+```
+
+
+```{r}
 all_atp_binder <- AnnotationDbi::select(
   org.Hs.eg.db, 
   keys = "GO:0005524", 
