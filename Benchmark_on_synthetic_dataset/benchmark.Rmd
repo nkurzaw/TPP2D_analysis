@@ -503,35 +503,21 @@ thres_found_recurrently <- unique(passed_filter_df$clustername[
 Get FDR estimates for different numbers of bootstraps
 ```{r}
 sim_fdr_df_s1_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
-                                     df_null = sim_null_df)
+                                     df_null = sim_s1_null_df)
 sim_fdr_df_s2_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df)
 sim_fdr_df_s3_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s3_null_df)
 
-sim_fdr_df_s1_b50_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:50, sep = "_")))
-sim_fdr_df_s1_b50_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:50, sep = "_")))
-sim_fdr_df_s1_b50_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:50, sep = "_")))
-
 sim_fdr_df_s1_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:20, sep = "_")))
+                         df_null = filter(sim_s1_null_df, dataset %in% paste("bootstrap", 1:20, sep = "_")))
 sim_fdr_df_s2_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
                          df_null = filter(sim_s2_null_df, dataset %in% paste("bootstrap", 1:20, sep = "_")))
 sim_fdr_df_s3_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
                          df_null = filter(sim_s3_null_df, dataset %in% paste("bootstrap", 1:20, sep = "_")))
 
-sim_fdr_df_s1_b10_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:10, sep = "_")))
-sim_fdr_df_s2_b10_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in% paste("bootstrap", 1:10, sep = "_")))
-sim_fdr_df_s3_b10_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in% paste("bootstrap", 1:10, sep = "_")))
-
 sim_fdr_df_s1_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_null_df, dataset %in% paste("bootstrap", 1:5, sep = "_")))
+                         df_null = filter(sim_s1_null_df, dataset %in% paste("bootstrap", 1:5, sep = "_")))
 sim_fdr_df_s2_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
                          df_null = filter(sim_s2_null_df, dataset %in% paste("bootstrap", 1:5, sep = "_")))
 sim_fdr_df_s3_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
