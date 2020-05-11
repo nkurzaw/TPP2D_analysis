@@ -1,0 +1,253 @@
+---
+title: "Analysis of PCI-34051 dataset"
+author:
+- name: Nils Kurzawa
+  affiliation: 
+  - European Molecular Biology Laboratory (EMBL), Genome Biology Unit
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+package: TPP2D
+output:
+  BiocStyle::pdf_document:
+vignette: >
+    %\VignetteIndexEntry{Vignette Title}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8} 
+bibliography: ../bibliography.bib
+csl: ../cell.csl
+header-includes: 
+- \usepackage{placeins}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+reRun <- FALSE
+```
+
+# Step-by-step walk through the `TPP2D` analysis
+
+```{r eval = FALSE}
+# This script uses the development version of TPP2D
+if(require("BiocManager"))
+  install.packages("BiocManager")
+BiocManager::install("nkurzaw/TPP2D")
+```
+
+Load required libraries
+
+```{r}
+library(TPP2D)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readxl)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+```
+
+Define plot style
+```{r}
+theme_paper <- theme_bw(base_size = 6) +
+  theme(legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        panel.background = element_blank(), 
+        panel.grid.major = element_line(colour = "grey92", size = 0.25),
+        panel.grid.minor = element_line(colour = "grey92", size = 0.15),
+        panel.border = element_blank(), 
+        strip.background = element_blank(), 
+        plot.background = element_blank(), 
+        complete = TRUE,
+        axis.line = element_line(color = "black", size = 0.25),
+        text = element_text(size = 7),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6))
+```
+
+Download the supplementary table from the journal's website
+
+```{r}
+# still needs to be added when supplementary table is available online
+```
+
+
+Read in the data and reformat to a data frame as would be obtained after import of the raw data:
+
+```{r}
+pci_raw <- read_xlsx("Supplementary_Data_2.xlsx", sheet = "PCI34051") %>% 
+  dplyr::select(representative,
+                clustername,
+                qupm,
+                qusm,
+                temperature,
+                matches("sumionarea"),
+                matches("rel_fc_protein"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+pci_fil <- resolveAmbiguousProteinNames(pci_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+pci_df <- recomputeSignalFromRatios(pci_fil)
+```
+
+Compute null and alternative model fits and extract parameters
+```{r eval=reRun}
+pci_params_df <- getModelParamsDf(pci_df, maxit = 500)
+saveRDS(pci_params_df, file = "../pre_run_data/pci_params_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pci_params_df <- readRDS("../pre_run_data/pci_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+pci_fstat_df <- computeFStatFromParams(pci_params_df)
+```
+
+Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+```{r eval=reRun}
+set.seed(12, kind = "L'Ecuyer-CMRG")
+pci_null_df <- bootstrapNullAlternativeModel(
+  df = pci_lys_df, params_df = pci_params_df, 
+  maxit = 500, B = 100,
+  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
+  verbose = FALSE)
+saveRDS(pci_null_df, file = "../pre_run_data/pci_null_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pci_null_df <- readRDS("../pre_run_data/pci_null_df.rds")
+```
+
+Remove carry-over cases:
+```{r}
+## manually identified carry-over cases
+carry_over_cases <- 
+c("ALDH1B1", "BTK", "CAMK2G", "CSK", "CSNK2A1", "CSNK2A2", "GAK",
+  "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
+  "NQO1", "PDXK", "PRKAA1", "PRKAG1", "RPS6KA1", "ULK3",
+  "CDK2", "CDK5")
+
+```
+
+
+Compute FDR and find hits:
+
+```{r}
+pci_fdr_df <- getFDR(df_out = pci_fstat_df %>% 
+                         filter(!clustername %in% carry_over_cases),
+                     df_null = pci_null_df %>% 
+                         filter(!clustername %in% carry_over_cases))
+  
+pci_hits_df <- findHits(pci_fdr_df, alpha = 0.1)
+```
+
+```{r}
+ggplot(pci_fdr_df %>% 
+         filter(dataset == "true"), 
+       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+  geom_point(color = "gray", alpha = 0.5, size = 1) + 
+  geom_point(aes(color = group), alpha = 0.5, 
+             size = 1,
+             data = pci_hits_df %>% 
+                 mutate(group = case_when(
+                     slopeH1 > 0 ~ "stabilized protein",
+                     slopeH1 < 0 ~ "destabilized protein"))) + 
+  ggrepel::geom_text_repel(
+    aes(label = clustername),
+    data = filter(pci_hits_df, clustername %in% 
+                    c("HDAC8", "LAP3")),
+    size = 2, segment.size = 0.2, min.segment.length = unit(1, "pt")) +
+  scale_color_manual("", values = c("orange", "steelblue")) +
+  coord_cartesian(xlim = c(-12.5, 7.5)) + 
+  ylab("asinh(F statistic)") +
+  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
+       y = expression('asinh('*italic(F)*' statistic)')) +
+  ggtitle("PCI-34051 in-cell experiment") +
+  theme_paper +
+  theme(legend.position = "bottom")
+
+```
+
+# Plot example profiles
+
+HDAC8
+```{r}
+hdac8_fit <- plot2dTppFit(pci_df, "HDAC8", "H1")$data
+
+hdac8_df <- filter(pci_df, clustername == "HDAC8")
+
+ggplot(hdac8_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = hdac8_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(PCI-34051 conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("HDAC8, alternative model") +
+  theme_paper
+```
+
+LAP3
+```{r}
+lap3_fit <- plot2dTppFit(pci_df, "LAP3", "H1")$data
+
+lap3_df <- filter(pci_df, clustername == "LAP3")
+
+ggplot(lap3_fit, aes(log_conc, y_hat)) +
+  geom_line() +
+  geom_point(aes(log_conc, log2_value), 
+             data = lap3_df, size = 0.5) +
+  facet_wrap(~temperature, ncol = 6) +
+  labs(x = expression('log'[10]~ '(PCI-34051 conc.)'),
+       y = expression('log'[2]~ '(summed ion area)')) +
+  ggtitle("LAP3, alternative model") +
+  theme_paper
+```
+
+# GO analysis
+We do this using the `clusterProfiler` package by @Yu2012
+```{r}
+hits_entrez <- bitr(pci_hits_df$clustername, 
+                fromType = "SYMBOL",
+                toType = c("ENTREZID"),
+                OrgDb = org.Hs.eg.db)
+
+backg_entrez <- bitr(pci_fdr_df$clustername, 
+                     fromType = "SYMBOL",
+                     toType = c("ENTREZID"),
+                     OrgDb = org.Hs.eg.db)
+
+
+ego <- enrichGO(gene = hits_entrez$ENTREZID,
+                universe = backg_entrez$ENTREZID,
+                OrgDb = org.Hs.eg.db,
+                ont = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.01,
+                qvalueCutoff = 0.05,
+                readable = TRUE)
+
+dotplot(ego)
+```
+
+
+```{r}
+sessionInfo()
+```
