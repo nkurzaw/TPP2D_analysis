@@ -70,10 +70,6 @@ if(!file.exists("../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Fig
     system("rm ../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Figure_3.zip")
 }
 
-# Ampicillin E.coli dataset
-
-
-# ATP crude lysate dataset
 ```
 
 ```{r}
