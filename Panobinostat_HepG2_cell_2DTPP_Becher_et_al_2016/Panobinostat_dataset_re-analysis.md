@@ -1,9 +1,6 @@
 Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016
 ================
-true
 24 June, 2020
-
-
 
 # Step-by-step walk through the anlysis
 
@@ -198,7 +195,7 @@ ggplot(pano_fdr_df %>%
   theme(legend.position = "bottom")
 ```
 
-![](md_files/panobinostat-unnamed-chunk-12-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-12-1.png" width="100%" />
 
 ``` r
 ggplot(pano_fdr_df %>% 
@@ -234,7 +231,7 @@ ggplot(pano_fdr_df %>%
   theme(legend.position = "bottom")
 ```
 
-![](md_files/panobinostat-unnamed-chunk-13-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-13-1.png" width="100%" />
 
 # Compare to previous analysis
 
@@ -248,7 +245,7 @@ venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 > 0))$clustername,
           "threshold-based" = (pano_thres_df %>% filter(protein_stabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-14-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-14-1.png" width="100%" />
 
 ``` r
 #destabilization
@@ -256,7 +253,7 @@ venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 < 0))$clustername,
           "threshold-based" = (pano_thres_df %>% filter(protein_destabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-15-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-15-1.png" width="100%" />
 
 # Plot example profiles
 
@@ -284,7 +281,7 @@ hdac6_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(hdac6_thp, hdac6_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-16-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-16-1.png" width="100%" />
 
 FADS1
 
@@ -310,7 +307,7 @@ fads1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(fads1_thp, fads1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-17-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-17-1.png" width="100%" />
 
 HDAC1
 
@@ -336,7 +333,7 @@ hdac1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(hdac1_thp, hdac1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-18-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-18-1.png" width="100%" />
 
 ZNF384
 
@@ -362,7 +359,7 @@ znf384_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(znf384_thp, znf384_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-19-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-19-1.png" width="100%" />
 
 DHRS1
 
@@ -388,7 +385,7 @@ dhrs1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(dhrs1_thp, dhrs1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
-![](md_files/panobinostat-unnamed-chunk-20-1.png)<!-- -->
+<img src="md_files/panobinostat-unnamed-chunk-20-1.png" width="100%" />
 
 ``` r
 sessionInfo()

@@ -1,24 +1,18 @@
 ---
 title: "Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016"
-author:
-- name: Nils Kurzawa
-  affiliation: 
-  - European Molecular Biology Laboratory (EMBL), Genome Biology Unit
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-package: TPP2D
 output:
     rmarkdown::github_document:
     html_preview: false
 bibliography: ../bibliography.bib
 csl: ../cell.csl
-header-includes: 
-- \usepackage{placeins}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
-  fig.path = "md_files/panobinostat-"
+  fig.path = "md_files/panobinostat-",
+  out.width = "100%"
 )
 reRun <- FALSE
 ```
