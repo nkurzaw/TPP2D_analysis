@@ -1,31 +1,13 @@
----
-title: "Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016"
-author:
-- name: Nils Kurzawa
-  affiliation: 
-  - European Molecular Biology Laboratory (EMBL), Genome Biology Unit
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-package: TPP2D
-output:
-    rmarkdown::github_document:
-    html_preview: false
-bibliography: ../bibliography.bib
-csl: ../cell.csl
-header-includes: 
-- \usepackage{placeins}
----
+Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016
+================
+true
+24 June, 2020
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = TRUE,
-  fig.path = "md_files/panobinostat-"
-)
-reRun <- FALSE
-```
+
 
 # Step-by-step walk through the anlysis
 
-```{r eval = FALSE}
+``` r
 # This script uses the development version of TPP2D
 if(require("BiocManager"))
   install.packages("BiocManager")
@@ -34,18 +16,41 @@ BiocManager::install("nkurzaw/TPP2D")
 
 Load required libraries
 
-```{r}
+``` r
 library(TPP2D)
+```
+
+    ## Loading required package: dplyr
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(readxl)
 library(gplots)
-
 ```
 
+    ## 
+    ## Attaching package: 'gplots'
+
+    ## The following object is masked from 'package:stats':
+    ## 
+    ##     lowess
+
 Define plot style
-```{r}
+
+``` r
 theme_paper <- theme_bw(base_size = 6) +
   theme(legend.background = element_blank(), 
         legend.key = element_blank(), 
@@ -70,21 +75,21 @@ theme_heat_paper <-
         axis.text = element_text(size = 6, color = "black"))
 ```
 
-Download the supplementary excel table (Supplementary Dataset S1) by @Becher2016
+Download the supplementary excel table (Supplementary Dataset S1) by
+Becher et al. (2016)
 
-```{r}
+``` r
 if(!file.exists("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx")){
 download.file(
   url = "https://static-content.springer.com/esm/art%3A10.1038%2Fnchembio.2185/MediaObjects/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx",
   destfile = "41589_2016_BFnchembio2185_MOESM254_ESM.xlsx") 
 }
-  
 ```
 
+Read in the data and reformat to a data frame as would be obtained after
+import of the raw data:
 
-Read in the data and reformat to a data frame as would be obtained after import of the raw data:
-
-```{r}
+``` r
 pano_cell_raw <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
                            sheet = 1, skip = 1) %>% 
   dplyr::select(representative,
@@ -124,22 +129,23 @@ pano_cell_df <- recomputeSignalFromRatios(pano_cell_fil)
 ```
 
 Compute null and alternative model fits and extract parameters
-```{r eval=reRun}
+
+``` r
 pano_params_df <- getModelParamsDf(pano_cell_df, maxit = 500)
 saveRDS(pano_params_df, file = "../pre_run_data/pano_params_df.rds")
 ```
 
-```{r eval=!reRun, echo=FALSE}
-pano_params_df <- readRDS("../pre_run_data/pano_params_df.rds")
-```
-
 Compute *F* statistics
-```{r}
+
+``` r
 pano_fstat_df <- computeFStatFromParams(pano_params_df)
 ```
 
-Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
-```{r eval=reRun}
+Get \(B\) datasets expected under the null model and perform model
+fitting and compute F statistics to obtain a null distribution for FDR
+calibration:
+
+``` r
 set.seed(12, kind = "L'Ecuyer-CMRG")
 pano_null_df <- bootstrapNullAlternativeModel(
   df = pano_cell_df, params_df = pano_params_df, 
@@ -149,13 +155,9 @@ pano_null_df <- bootstrapNullAlternativeModel(
 saveRDS(pano_null_df, file = "../pre_run_data/pano_null_df.rds")
 ```
 
-```{r eval=!reRun, echo=FALSE}
-pano_null_df <- readRDS("../pre_run_data/pano_null_df.rds")
-```
-
 Compute FDR and find hits:
 
-```{r}
+``` r
 pano_fdr_df <- getFDR(df_out = pano_fstat_df,
                      df_null = pano_null_df,
                      squeezeDenominator = TRUE)
@@ -163,7 +165,7 @@ pano_fdr_df <- getFDR(df_out = pano_fstat_df,
 pano_hits_df <- findHits(pano_fdr_df, alpha = 0.1)
 ```
 
-```{r}
+``` r
 ggplot(pano_fdr_df %>% 
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
@@ -196,8 +198,9 @@ ggplot(pano_fdr_df %>%
   theme(legend.position = "bottom")
 ```
 
+![](md_files/panobinostat-unnamed-chunk-12-1.png)<!-- -->
 
-```{r}
+``` r
 ggplot(pano_fdr_df %>% 
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
@@ -229,12 +232,13 @@ ggplot(pano_fdr_df %>%
   coord_cartesian(xlim = c(-12.5, 7.5)) +
   theme_paper +
   theme(legend.position = "bottom")
-
 ```
+
+![](md_files/panobinostat-unnamed-chunk-13-1.png)<!-- -->
 
 # Compare to previous analysis
 
-```{r}
+``` r
 pano_thres_df <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
                           sheet = 1, skip = 1) %>% 
   filter(qupm > 1)
@@ -242,20 +246,23 @@ pano_thres_df <- read_xlsx("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx",
 #stabilization
 venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 > 0))$clustername,
           "threshold-based" = (pano_thres_df %>% filter(protein_stabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
-
 ```
 
-```{r}
+![](md_files/panobinostat-unnamed-chunk-14-1.png)<!-- -->
+
+``` r
 #destabilization
 venn(list("DLPTP" = (pano_hits_df %>% filter(slopeH1 < 0))$clustername,
           "threshold-based" = (pano_thres_df %>% filter(protein_destabilized_neighb_temp_good_curves_count > 1) %>% filter(!duplicated(clustername)))$clustername))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-15-1.png)<!-- -->
+
 # Plot example profiles
 
 HDAC6
 
-```{r}
+``` r
 hdac6_fit <- plot2dTppFit(pano_cell_df, "HDAC6", "H1")$data
 
 hdac6_df <- filter(pano_cell_df, clustername == "HDAC6")
@@ -277,8 +284,11 @@ hdac6_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(hdac6_thp, hdac6_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-16-1.png)<!-- -->
+
 FADS1
-```{r}
+
+``` r
 fads1_fit <- plot2dTppFit(pano_cell_df, "FADS1", "H1")$data
 
 fads1_df <- filter(pano_cell_df, clustername == "FADS1")
@@ -300,8 +310,11 @@ fads1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(fads1_thp, fads1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-17-1.png)<!-- -->
+
 HDAC1
-```{r}
+
+``` r
 hdac1_fit <- plot2dTppFit(pano_cell_df, "HDAC1", "H1")$data
 
 hdac1_df <- filter(pano_cell_df, clustername == "HDAC1")
@@ -323,8 +336,11 @@ hdac1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(hdac1_thp, hdac1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-18-1.png)<!-- -->
+
 ZNF384
-```{r}
+
+``` r
 znf384_fit <- plot2dTppFit(pano_cell_df, "ZNF384", "H1")$data
 
 znf384_df <- filter(pano_cell_df, clustername == "ZNF384")
@@ -346,8 +362,11 @@ znf384_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(znf384_thp, znf384_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-19-1.png)<!-- -->
+
 DHRS1
-```{r}
+
+``` r
 dhrs1_fit <- plot2dTppFit(pano_cell_df, "DHRS1", "H1")$data
 
 dhrs1_df <- filter(pano_cell_df, clustername == "DHRS1")
@@ -369,10 +388,61 @@ dhrs1_fcHeat <- plot2dTppFcHeatmap(
 cowplot::plot_grid(dhrs1_thp, dhrs1_fcHeat, rel_widths = c(0.7, 0.3))
 ```
 
+![](md_files/panobinostat-unnamed-chunk-20-1.png)<!-- -->
 
-```{r}
+``` r
 sessionInfo()
 ```
 
+    ## R version 4.0.0 Patched (2020-05-04 r78358)
+    ## Platform: x86_64-apple-darwin17.0 (64-bit)
+    ## Running under: macOS Mojave 10.14.6
+    ## 
+    ## Matrix products: default
+    ## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+    ## 
+    ## locale:
+    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ## 
+    ## attached base packages:
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
+    ## 
+    ## other attached packages:
+    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.1 tidyr_1.1.0   TPP2D_1.5.5  
+    ## [6] dplyr_1.0.0  
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] zip_2.0.4           Rcpp_1.0.4.6        cellranger_1.1.0   
+    ##  [4] pillar_1.4.4        compiler_4.0.0      bitops_1.0-6       
+    ##  [7] iterators_1.0.12    tools_4.0.0         digest_0.6.25      
+    ## [10] evaluate_0.14       lifecycle_0.2.0     tibble_3.0.1       
+    ## [13] gtable_0.3.0        pkgconfig_2.0.3     rlang_0.4.6        
+    ## [16] openxlsx_4.1.5      foreach_1.5.0       ggrepel_0.8.2      
+    ## [19] yaml_2.2.1          parallel_4.0.0      xfun_0.14          
+    ## [22] withr_2.2.0         stringr_1.4.0       knitr_1.28         
+    ## [25] caTools_1.18.0      gtools_3.8.2        generics_0.0.2     
+    ## [28] vctrs_0.3.0         cowplot_1.0.0       grid_4.0.0         
+    ## [31] tidyselect_1.1.0    glue_1.4.1          R6_2.4.1           
+    ## [34] BiocParallel_1.22.0 rmarkdown_2.2       gdata_2.18.0       
+    ## [37] limma_3.44.1        farver_2.0.3        purrr_0.3.4        
+    ## [40] magrittr_1.5        scales_1.1.1        codetools_0.2-16   
+    ## [43] ellipsis_0.3.1      htmltools_0.4.0     MASS_7.3-51.6      
+    ## [46] colorspace_1.4-1    labeling_0.3        KernSmooth_2.23-17 
+    ## [49] stringi_1.4.6       RCurl_1.98-1.2      munsell_0.5.0      
+    ## [52] doParallel_1.0.15   crayon_1.3.4
 
 # References
+
+<div id="refs" class="references">
+
+<div id="ref-Becher2016">
+
+Becher, I., Werner, T., Doce, C., Zaal, E.A., Tögel, I., Khan, C.A.,
+Rueger, A., Muelbaier, M., Salzer, E., Berkers, C.R., et al. (2016).
+Thermal profiling reveals phenylalanine hydroxylase as an off-target of
+panobinostat. Nature Chemical Biology *12*, 908–910.
+
+</div>
+
+</div>
