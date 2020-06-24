@@ -79,7 +79,8 @@ Becher et al. (2016)
 if(!file.exists("41589_2016_BFnchembio2185_MOESM254_ESM.xlsx")){
 download.file(
   url = "https://static-content.springer.com/esm/art%3A10.1038%2Fnchembio.2185/MediaObjects/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx",
-  destfile = "41589_2016_BFnchembio2185_MOESM254_ESM.xlsx") 
+  destfile = "41589_2016_BFnchembio2185_MOESM254_ESM.xlsx",
+  mode = "wb") 
 }
 ```
 
