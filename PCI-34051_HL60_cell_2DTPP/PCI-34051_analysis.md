@@ -458,6 +458,8 @@ sessionInfo()
     ## [91] tibble_3.0.1        rvcheck_0.1.8       iterators_1.0.12   
     ## [94] memoise_1.1.0       ellipsis_0.3.1
 
+# References
+
 <div id="refs" class="references">
 
 <div id="ref-Yu2012">

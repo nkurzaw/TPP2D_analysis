@@ -67,7 +67,7 @@ theme_heat_paper <-
 
 Download the supplementary table from the journal's website
 
-```{r, eval=FALSE}
+```{r}
 if(!file.exists("Supplementary_Data_2.xlsx")){
   download.file(
     url = "https://www.biorxiv.org/content/biorxiv/early/2020/05/09/2020.05.08.083709/DC2/embed/media-2.xlsx?download=true",
@@ -267,3 +267,5 @@ dotplot(ego)
 ```{r}
 sessionInfo()
 ```
+
+# References
