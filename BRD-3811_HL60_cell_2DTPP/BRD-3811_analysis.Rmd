@@ -182,12 +182,39 @@ ggplot(brd_fdr_df %>%
   ylab("asinh(F statistic)") +
   labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
        y = expression('asinh('*italic(F)*' statistic)')) +
-  ggtitle("brd-34051 in-cell experiment") +
+  ggtitle("BRD-34051 in-cell experiment") +
   theme_paper +
   theme(legend.position = "bottom")
 
 ```
 
+```{r}
+ggplot(brd_fdr_df %>% 
+         filter(dataset == "true"), 
+       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+  geom_point(color = "gray", alpha = 0.5, size = 1) + 
+  geom_point(aes(color = group), alpha = 0.5, 
+             size = 1,
+             data = brd_hits_df %>% 
+                 mutate(group = case_when(
+                     slopeH1 > 0 ~ "stabilized protein",
+                     slopeH1 < 0 ~ "destabilized protein"))) + 
+  ggrepel::geom_text_repel(
+    aes(label = clustername),
+    data = filter(brd_hits_df, clustername %in% 
+                    c("HDAC8", "LAP3")),
+    size = 2, segment.size = 0.2, min.segment.length = unit(1, "pt")) +
+  scale_color_manual("", values = c("orange", "steelblue")) +
+  coord_cartesian(xlim = c(-12.5, 7.5)) + 
+  facet_wrap(~ nObsRound) +
+  ylab("asinh(F statistic)") +
+  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
+       y = expression('asinh('*italic(F)*' statistic)')) +
+  ggtitle("BRD-34051 in-cell experiment") +
+  theme_paper +
+  theme(legend.position = "bottom")
+
+```
 # Plot example profiles
 
 LAP3

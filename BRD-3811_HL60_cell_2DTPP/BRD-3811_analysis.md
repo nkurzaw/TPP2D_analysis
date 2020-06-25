@@ -286,14 +286,42 @@ ggplot(brd_fdr_df %>%
   ylab("asinh(F statistic)") +
   labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
        y = expression('asinh('*italic(F)*' statistic)')) +
-  ggtitle("brd-34051 in-cell experiment") +
+  ggtitle("BRD-34051 in-cell experiment") +
   theme_paper +
   theme(legend.position = "bottom")
 ```
 
 <img src="md_files/brd3811-unnamed-chunk-13-1.png" width="100%" />
 
-# Plot example profiles
+``` r
+ggplot(brd_fdr_df %>% 
+         filter(dataset == "true"), 
+       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+  geom_point(color = "gray", alpha = 0.5, size = 1) + 
+  geom_point(aes(color = group), alpha = 0.5, 
+             size = 1,
+             data = brd_hits_df %>% 
+                 mutate(group = case_when(
+                     slopeH1 > 0 ~ "stabilized protein",
+                     slopeH1 < 0 ~ "destabilized protein"))) + 
+  ggrepel::geom_text_repel(
+    aes(label = clustername),
+    data = filter(brd_hits_df, clustername %in% 
+                    c("HDAC8", "LAP3")),
+    size = 2, segment.size = 0.2, min.segment.length = unit(1, "pt")) +
+  scale_color_manual("", values = c("orange", "steelblue")) +
+  coord_cartesian(xlim = c(-12.5, 7.5)) + 
+  facet_wrap(~ nObsRound) +
+  ylab("asinh(F statistic)") +
+  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
+       y = expression('asinh('*italic(F)*' statistic)')) +
+  ggtitle("BRD-34051 in-cell experiment") +
+  theme_paper +
+  theme(legend.position = "bottom")
+```
+
+<img src="md_files/brd3811-unnamed-chunk-14-1.png" width="100%" /> \#
+Plot example profiles
 
 LAP3
 
@@ -313,7 +341,7 @@ ggplot(lap3_fit, aes(log_conc, y_hat)) +
   theme_paper
 ```
 
-<img src="md_files/brd3811-unnamed-chunk-14-1.png" width="100%" />
+<img src="md_files/brd3811-unnamed-chunk-15-1.png" width="100%" />
 
 ``` r
 plot2dTppFcHeatmap(
@@ -321,7 +349,7 @@ plot2dTppFcHeatmap(
   drug_name = "BRD-3811") + theme_heat_paper
 ```
 
-<img src="md_files/brd3811-unnamed-chunk-14-2.png" width="100%" />
+<img src="md_files/brd3811-unnamed-chunk-15-2.png" width="100%" />
 
 # GO analysis
 
@@ -364,7 +392,7 @@ ego <- enrichGO(gene = hits_entrez$ENTREZID,
 dotplot(ego)
 ```
 
-<img src="md_files/brd3811-unnamed-chunk-15-1.png" width="100%" />
+<img src="md_files/brd3811-unnamed-chunk-16-1.png" width="100%" />
 
 ``` r
 sessionInfo()
@@ -388,7 +416,7 @@ sessionInfo()
     ## other attached packages:
     ##  [1] org.Hs.eg.db_3.11.4    AnnotationDbi_1.50.0   IRanges_2.22.2        
     ##  [4] S4Vectors_0.26.1       Biobase_2.48.0         BiocGenerics_0.34.0   
-    ##  [7] clusterProfiler_3.16.0 readxl_1.3.1           ggplot2_3.3.1         
+    ##  [7] clusterProfiler_3.16.0 readxl_1.3.1           ggplot2_3.3.2         
     ## [10] tidyr_1.1.0            TPP2D_1.5.5            dplyr_1.0.0           
     ## 
     ## loaded via a namespace (and not attached):
