@@ -1,25 +1,19 @@
 ---
 title: "Analysis of BRD-3811 dataset"
-author:
-- name: Nils Kurzawa
-  affiliation: 
-  - European Molecular Biology Laboratory (EMBL), Genome Biology Unit
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-package: TPP2D
 output:
-  BiocStyle::pdf_document:
-vignette: >
-    %\VignetteIndexEntry{Vignette Title}
-    %\VignetteEngine{knitr::rmarkdown}
-    %\VignetteEncoding{UTF-8} 
+    rmarkdown::github_document:
+    html_preview: false
 bibliography: ../bibliography.bib
 csl: ../cell.csl
-header-includes: 
-- \usepackage{placeins}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.path = "md_files/brd3811-",
+  out.width = "100%"
+)
 reRun <- FALSE
 ```
 
@@ -61,12 +55,24 @@ theme_paper <- theme_bw(base_size = 6) +
         axis.ticks = element_line(color = "black", size = 0.25),
         axis.title = element_text(size = 8),
         axis.text = element_text(size = 6))
+
+theme_heat_paper <- 
+  theme_minimal(base_size = 6) +
+  theme(text = element_text(size = 7, color = "black"),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6, color = "black"))
 ```
 
 Download the supplementary table from the journal's website
 
 ```{r}
-# still needs to be added when supplementary table is available online
+if(!file.exists("Supplementary_Data_2.xlsx")){
+  download.file(
+    url = "https://www.biorxiv.org/content/biorxiv/early/2020/05/09/2020.05.08.083709/DC2/embed/media-2.xlsx?download=true",
+    destfile = "Supplementary_Data_2.xlsx",
+    mode = "wb")
+}
 ```
 
 
@@ -149,7 +155,8 @@ Compute FDR and find hits:
 brd_fdr_df <- getFDR(df_out = brd_fstat_df %>% 
                          filter(!clustername %in% carry_over_cases),
                      df_null = brd_null_df %>% 
-                         filter(!clustername %in% carry_over_cases))
+                         filter(!clustername %in% carry_over_cases),
+                     squeezeDenominator = TRUE)
   
 brd_hits_df <- findHits(brd_fdr_df, alpha = 0.1)
 ```
@@ -198,6 +205,10 @@ ggplot(lap3_fit, aes(log_conc, y_hat)) +
        y = expression('log'[2]~ '(summed ion area)')) +
   ggtitle("LAP3, alternative model") +
   theme_paper
+
+plot2dTppFcHeatmap(
+  df = brd_df, name = "LAP3",
+  drug_name = "BRD-3811") + theme_heat_paper
 ```
 
 # GO analysis
@@ -230,3 +241,5 @@ dotplot(ego)
 ```{r}
 sessionInfo()
 ```
+
+# References
