@@ -5,19 +5,19 @@ This repository contains code to reproduce analyses performed by Kurzawa et al. 
 ## Overview
 - Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016:
     - Panobinostat_dataset_re-analysis.Rmd
-    - Panobinostat_dataset_re-analysis.pdf
+    - Panobinostat_dataset_re-analysis.md       
 - JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018:
     - JQ1_dataset_re-analysis.Rmd
-    - JQ1_dataset_re-analysis.pdf
+    - JQ1_dataset_re-analysis.md        
 - PCI-34051_HL60_cell_2DTPP:
     - PCI-34051_analysis.Rmd
-    - PCI-34051_analysis.pdf
+    - PCI-34051_analysis.md     
 - BRD-3811_HL60_cell_2DTPP
     - BRD-3811_analysis.Rmd
-    - BRD-3811_analysis.pdf
+    - BRD-3811_analysis.md      
 - GTP_Jurkat_gelfil_lysate_2DTPP
     - GTP_analysis.Rmd
-    - GTP_analysis.pdf
+    - GTP_analysis.md       
 - Benchmark_on_synthetic_dataset
     - benchmark.Rmd
 
