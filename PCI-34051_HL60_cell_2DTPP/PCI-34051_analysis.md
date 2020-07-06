@@ -1,6 +1,6 @@
 Analysis of PCI-34051 dataset
 ================
-25 June, 2020
+06 July, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -337,7 +337,7 @@ hdac8_fit <- plot2dTppFit(pci_df, "HDAC8", "H1")$data
 hdac8_df <- filter(pci_df, clustername == "HDAC8")
 
 ggplot(hdac8_fit, aes(log_conc, y_hat)) +
-  geom_line(color = "gray80") +
+  geom_line(color = "gray40") +
   geom_point(aes(log_conc, log2_value), 
              data = hdac8_df, size = 0.5) +
   facet_wrap(~temperature, ncol = 6) +
@@ -365,7 +365,7 @@ lap3_fit <- plot2dTppFit(pci_df, "LAP3", "H1")$data
 lap3_df <- filter(pci_df, clustername == "LAP3")
 
 ggplot(lap3_fit, aes(log_conc, y_hat)) +
-  geom_line(color = "gray80") +
+  geom_line(color = "gray40") +
   geom_point(aes(log_conc, log2_value), 
              data = lap3_df, size = 0.5) +
   facet_wrap(~temperature, ncol = 6) +
