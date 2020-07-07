@@ -1001,6 +1001,7 @@ sessionInfo()
     ## [64] stringi_1.4.6        Rcpp_1.0.4.6         vctrs_0.3.0         
     ## [67] biobroom_1.20.0      tidyselect_1.1.0     xfun_0.14
 
+# References
 <div id="refs" class="references">
 
 <div id="ref-Becher2016">
