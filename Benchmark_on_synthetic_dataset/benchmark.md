@@ -1,25 +1,10 @@
----
-title: "Benchmark on synthetic dataset"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output:
-    rmarkdown::github_document:
-    html_preview: false
-bibliography: ../bibliography.bib
-csl: ../cell.csl
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = TRUE,
-  fig.path = "md_files/benchmark-",
-  out.width = "100%"
-)
-reRun <- FALSE
-```
+Benchmark on synthetic dataset
+================
+07 July, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
-```{r eval = FALSE}
+``` r
 # This script uses the development version of TPP2D
 if(require("BiocManager"))
   install.packages("BiocManager")
@@ -28,25 +13,131 @@ BiocManager::install("nkurzaw/TPP2D")
 
 Load required libraries
 
-```{r}
+``` r
 library(TPP2D)
+```
+
+    ## Loading required package: dplyr
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(readxl)
 library(AnnotationDbi)
+```
+
+    ## Loading required package: stats4
+
+    ## Loading required package: BiocGenerics
+
+    ## Loading required package: parallel
+
+    ## 
+    ## Attaching package: 'BiocGenerics'
+
+    ## The following objects are masked from 'package:parallel':
+    ## 
+    ##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    ##     clusterExport, clusterMap, parApply, parCapply, parLapply,
+    ##     parLapplyLB, parRapply, parSapply, parSapplyLB
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     combine, intersect, setdiff, union
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     IQR, mad, sd, var, xtabs
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    ##     dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    ##     grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    ##     order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    ##     rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    ##     union, unique, unsplit, which, which.max, which.min
+
+    ## Loading required package: Biobase
+
+    ## Welcome to Bioconductor
+    ## 
+    ##     Vignettes contain introductory material; view with
+    ##     'browseVignettes()'. To cite Bioconductor, see
+    ##     'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+    ## Loading required package: IRanges
+
+    ## Loading required package: S4Vectors
+
+    ## 
+    ## Attaching package: 'S4Vectors'
+
+    ## The following object is masked from 'package:tidyr':
+    ## 
+    ##     expand
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     first, rename
+
+    ## The following object is masked from 'package:base':
+    ## 
+    ##     expand.grid
+
+    ## 
+    ## Attaching package: 'IRanges'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     collapse, desc, slice
+
+    ## 
+    ## Attaching package: 'AnnotationDbi'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     select
+
+``` r
 library(org.Hs.eg.db)
+```
+
+    ## 
+
+``` r
 library(TPP)
 ```
 
-Download and read in required datasets for true positive spike-in profiles:
-- Panobinostat cell dataset @Becher2016
-- JQ1 lysate dataset @Savitski2018
-- Ampicillin *E. coli* lysate @Mateus2018
-- ATP crude lysate rep1 @Sridharan2019
+    ## Loading required package: magrittr
 
+    ## 
+    ## Attaching package: 'magrittr'
 
-```{r}
+    ## The following object is masked from 'package:tidyr':
+    ## 
+    ##     extract
+
+Download and read in required datasets for true positive spike-in
+profiles: - Panobinostat cell dataset Becher et al. (2016) - JQ1 lysate
+dataset Savitski et al. (2018) - Ampicillin *E. coli* lysate
+(<span class="citeproc-not-found" data-reference-id="Mateus2018">**???**</span>)
+- ATP crude lysate rep1
+(<span class="citeproc-not-found" data-reference-id="Sridharan2019">**???**</span>)
+
+``` r
 # Pano datasets
 if(!file.exists("../Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx")){
 download.file(
@@ -63,10 +154,9 @@ if(!file.exists("../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Fig
         exdir = "../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Figure_3")
     system("rm ../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Figure_3.zip")
 }
-
 ```
 
-```{r}
+``` r
 jq1_lys_raw <- read_xlsx("../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Figure_3/Supplementary Dataset 2_2D-TPP.xlsx", sheet = 3, skip = 1) %>% 
   dplyr::select(representative = `Accession No.`,
                 clustername = `protein name`,
@@ -102,7 +192,7 @@ jq1_lys_fil <- resolveAmbiguousProteinNames(jq1_lys_raw)
 jq1_lys_df <- recomputeSignalFromRatios(jq1_lys_fil)
 ```
 
-```{r}
+``` r
 pano_raw <- read_xlsx("../Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
                            sheet = 1, skip = 1) %>% 
   dplyr::select(representative,
@@ -141,17 +231,16 @@ pano_fil <- resolveAmbiguousProteinNames(pano_raw)
 pano_df <- recomputeSignalFromRatios(pano_fil)
 ```
 
-```{r}
+``` r
 atp_df <- readRDS("../pre_run_data/atp_df.rds")
 amp_df <- readRDS("../pre_run_data/amp_df.rds")
 ```
 
-```{r}
+``` r
 atp_fil <- TPP2D:::.independentFilter(atp_df, fcThres = 1.25)
 ```
 
-
-```{r}
+``` r
 all_atp_binder <- AnnotationDbi::select(
   org.Hs.eg.db, 
   keys = "GO:0005524", 
@@ -159,10 +248,13 @@ all_atp_binder <- AnnotationDbi::select(
   keytype = "GOALL")
 ```
 
+    ## 'select()' returned 1:many mapping between keys and columns
+
 # Identify noise induced variation from JQ1 dataset
 
 ## JQ1 lysate
-```{r}
+
+``` r
 sd_log2_val_jq1 <- jq1_lys_df %>% 
   group_by(representative, temperature) %>% 
   summarise(sd_log2_value = sd(log2_value)) %>% 
@@ -172,16 +264,21 @@ sd_log2_val_jq1 <- jq1_lys_df %>%
   mutate(quant_95 = quantile(sd_log2_value, 0.95)) %>% 
   filter(sd_log2_value < quant_95) %>% 
   ungroup()
+```
 
+    ## `summarise()` regrouping output by 'representative' (override with `.groups` argument)
+
+``` r
 ggplot(sd_log2_val_jq1, aes(sd_log2_value)) +
   geom_density()+
   facet_wrap(~temperature)
 ```
 
+<img src="md_files/benchmark-unnamed-chunk-9-1.png" width="100%" />
 
 # Simulate data
 
-```{r eval=reRun}
+``` r
 set.seed(12)
 nobs <- c(20, 30, 40, 50, 60)
 
@@ -273,28 +370,26 @@ sim_tp_df <- sim_tp_df %>%
 saveRDS(sim_tp_df, file = "../pre_run_data/sim_tp_df.rds")
 ```
 
-```{r eval=!reRun}
+``` r
 sim_tp_df <- readRDS("../pre_run_data/sim_tp_df.rds")
 ```
 
 Compute null and alternative model fits and extract parameters
-```{r eval=reRun}
+
+``` r
 sim_params_df <- getModelParamsDf(sim_tp_df, maxit = 500)
 saveRDS(sim_params_df, file = "../pre_run_data/sim_params_df.rds")
 ```
 
-```{r eval=!reRun, echo=FALSE}
-sim_params_df <- readRDS("../pre_run_data/sim_params_df.rds")
-```
-
 Compute *F* statistics
-```{r}
+
+``` r
 sim_fstat_df <- computeFStatFromParams(sim_params_df)
 ```
 
 Do 2 separate rounds of bootstrapping the null distribution:
 
-```{r eval=reRun}
+``` r
 set.seed(2, kind = "L'Ecuyer-CMRG")
 sim_s2_null_df <- bootstrapNullAlternativeModel(
   df = sim_tp_df, params_df = sim_params_df, 
@@ -304,7 +399,7 @@ sim_s2_null_df <- bootstrapNullAlternativeModel(
 saveRDS(sim_s2_null_df, file = "../pre_run_data/sim_s2_null_df.rds")
 ```
 
-```{r eval=reRun}
+``` r
 set.seed(3, kind = "L'Ecuyer-CMRG")
 sim_s3_null_df <- bootstrapNullAlternativeModel(
   df = sim_tp_df, params_df = sim_params_df, 
@@ -314,14 +409,15 @@ sim_s3_null_df <- bootstrapNullAlternativeModel(
 saveRDS(sim_s3_null_df, file = "../pre_run_data/sim_s3_null_df.rds")
 ```
 
-```{r eval=!reRun}
+``` r
 sim_s2_null_df <- readRDS("../pre_run_data/sim_s2_null_df.rds")
 sim_s3_null_df <- readRDS("../pre_run_data/sim_s3_null_df.rds")
 ```
 
-Define function to compute the precision and recall based on the simulated dataset:
+Define function to compute the precision and recall based on the
+simulated dataset:
 
-```{r}
+``` r
 computePrecisionRecall <- function(fdr_df,
                                    alpha_range = seq(0.01, 1, by = 0.01),
                                    ntp = 50){
@@ -338,12 +434,11 @@ computePrecisionRecall <- function(fdr_df,
   
   return(out_pr_df)
 }
-
 ```
 
 Apply threshold-based approach to synthetic dataset
 
-```{r}
+``` r
 # set dummy drug concentrations
 general_conc_df <- tibble(
   conc_id = 1:5,
@@ -387,7 +482,25 @@ attr(thres_approach_df, "importSettings") <- importSettings
 
 # normalize fold changes
 thres_approach_norm <- tpp2dNormalize(data = thres_approach_df)
+```
 
+    ## Found the following column name in attr(data, 'importSettings')$proteinIdCol: 'representative'
+
+    ## Found the following column name in attr(data, 'importSettings')$fcStr: 'rel_fc_'
+
+    ## Performing median normalization per temperature...
+
+    ## Warning: `group_by_()` is deprecated as of dplyr 0.7.0.
+    ## Please use `group_by()` instead.
+    ## See vignette('programming') for more help
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_warnings()` to see where this warning was generated.
+
+    ## Warning: Setting row names on a tibble is deprecated.
+
+    ## Done.
+
+``` r
 # adapt curve fit function to work with synthetic data
 tpp2dCurveFitAdapted <- function (configFile = NULL, data, 
                                   nCores = 1, naStrs = NULL, 
@@ -469,6 +582,27 @@ tpp2dCurveFitAdapted <- function (configFile = NULL, data,
 }
 
 ccr2dResults <- tpp2dCurveFitAdapted(data = thres_approach_norm)
+```
+
+    ## Looking for unique ID column: 'unique_ID'
+
+    ## Looking for nonZeroCols: 'qupm'
+
+    ## Checking which columns in the data table contain the fold change values for fitting and plotting...
+
+    ## Normalized data columns detected with prefix 'norm_rel_fc_'. Analysis will be based on these values.
+    ## This information was found in the attributes of the input data (access with attr(dataTable, 'importSettings'))
+
+    ## Performing TPP-CCR dose response curve fitting and generating result table...
+
+    ## Warning: `tbl_df()` is deprecated as of dplyr 1.0.0.
+    ## Please use `tibble::as_tibble()` instead.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_warnings()` to see where this warning was generated.
+
+    ## Done.
+
+``` r
 importSettings <- attr(ccr2dResults, "importSettings")
 importSettings$intensityStr <- "rel_fc_"
 attr(ccr2dResults, "importSettings") <- importSettings
@@ -478,10 +612,9 @@ thres_found_recurrently <- unique(passed_filter_df$clustername[
     duplicated(passed_filter_df$clustername)])
 ```
 
-
-
 Get FDR estimates for different numbers of bootstraps
-```{r}
+
+``` r
 sim_fdr_df_s2_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df,
                                      squeezeDenominator = FALSE)
@@ -533,8 +666,10 @@ sim_fdr_df_s3_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
                          squeezeDenominator = TRUE)
 ```
 
-Compute precision and recall for each of the FDR estimates based on the different number of bootstraps
-```{r}
+Compute precision and recall for each of the FDR estimates based on the
+different number of bootstraps
+
+``` r
 pr_b100_2_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp, ntp = 80)
 pr_b100_3_byMsExp <- computePrecisionRecall(
@@ -542,10 +677,62 @@ pr_b100_3_byMsExp <- computePrecisionRecall(
 
 pr_b100_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp_mod, ntp = 80)
+```
+
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+
+``` r
 pr_b100_3_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b100_byMsExp_mod, ntp = 80)
+```
 
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
 
+``` r
 pr_b20_2_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b20_byMsExp, ntp = 80)
 pr_b20_3_byMsExp <- computePrecisionRecall(
@@ -553,10 +740,53 @@ pr_b20_3_byMsExp <- computePrecisionRecall(
 
 pr_b20_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b20_byMsExp_mod, ntp = 80)
+```
+
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+
+``` r
 pr_b20_3_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b20_byMsExp_mod, ntp = 80)
+```
 
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
 
+``` r
 pr_b5_2_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b5_byMsExp, ntp = 80)
 pr_b5_3_byMsExp <- computePrecisionRecall(
@@ -564,6 +794,48 @@ pr_b5_3_byMsExp <- computePrecisionRecall(
 
 pr_b5_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b5_byMsExp_mod, ntp = 80)
+```
+
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+
+``` r
 pr_b5_3_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b5_byMsExp_mod, ntp = 80)
 
@@ -590,8 +862,11 @@ b100_pr_df <- bind_rows(
             sd_fdr = sd(1-precision),
             sd_tpr = sd(recall)) %>% 
   ungroup 
-  
+```
 
+    ## `summarise()` regrouping output by 'variant' (override with `.groups` argument)
+
+``` r
 variantColors <- c("royalblue", "darkblue", 
                    "purple", "purple4", 
                    "orange", "orange3",
@@ -625,10 +900,11 @@ ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr,
   coord_fixed() +
   theme_classic() +
   theme(legend.position = c(0.75, 0.2))
-
 ```
 
-```{r}
+<img src="md_files/benchmark-unnamed-chunk-21-1.png" width="100%" />
+
+``` r
 all_alpha_fdr_df <- bind_rows(
    pr_b100_2_byMsExp %>% 
      mutate(variant = "DLPTP standard, B = 100"), 
@@ -660,8 +936,11 @@ all_alpha_fdr_df <- bind_rows(
             sd_fdr = sd(1-precision),
             sd_tpr = sd(recall)) %>% 
   ungroup
+```
 
+    ## `summarise()` regrouping output by 'variant' (override with `.groups` argument)
 
+``` r
 ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
   geom_point(aes(color = variant)) +
   geom_path(aes(color = variant)) +
@@ -677,7 +956,77 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
   theme_classic()
 ```
 
-```{r}
+<img src="md_files/benchmark-unnamed-chunk-22-1.png" width="100%" />
+
+``` r
 sessionInfo()
 ```
 
+    ## R version 4.0.0 Patched (2020-05-04 r78358)
+    ## Platform: x86_64-apple-darwin17.0 (64-bit)
+    ## Running under: macOS Mojave 10.14.6
+    ## 
+    ## Matrix products: default
+    ## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+    ## 
+    ## locale:
+    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ## 
+    ## attached base packages:
+    ## [1] parallel  stats4    stats     graphics  grDevices utils     datasets 
+    ## [8] methods   base     
+    ## 
+    ## other attached packages:
+    ##  [1] TPP_3.16.2           magrittr_1.5         org.Hs.eg.db_3.11.4 
+    ##  [4] AnnotationDbi_1.50.0 IRanges_2.22.2       S4Vectors_0.26.1    
+    ##  [7] Biobase_2.48.0       BiocGenerics_0.34.0  readxl_1.3.1        
+    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.5         
+    ## [13] dplyr_1.0.0         
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] VGAM_1.1-3           bit64_0.9-7          splines_4.0.0       
+    ##  [4] foreach_1.5.0        blob_1.2.1           nls2_0.2            
+    ##  [7] cellranger_1.1.0     yaml_2.2.1           backports_1.1.7     
+    ## [10] lattice_0.20-41      pillar_1.4.4         RSQLite_2.2.0       
+    ## [13] glue_1.4.1           limma_3.44.1         digest_0.6.25       
+    ## [16] RColorBrewer_1.1-2   colorspace_1.4-1     htmltools_0.4.0     
+    ## [19] plyr_1.8.6           pkgconfig_2.0.3      broom_0.5.6         
+    ## [22] purrr_0.3.4          scales_1.1.1         VennDiagram_1.6.20  
+    ## [25] openxlsx_4.1.5       BiocParallel_1.22.0  tibble_3.0.1        
+    ## [28] generics_0.0.2       farver_2.0.3         ellipsis_0.3.1      
+    ## [31] withr_2.2.0          crayon_1.3.4         memoise_1.1.0       
+    ## [34] evaluate_0.14        nlme_3.1-148         doParallel_1.0.15   
+    ## [37] MASS_7.3-51.6        tools_4.0.0          data.table_1.12.8   
+    ## [40] formatR_1.7          lifecycle_0.2.0      stringr_1.4.0       
+    ## [43] munsell_0.5.0        zip_2.0.4            lambda.r_1.2.4      
+    ## [46] compiler_4.0.0       rlang_0.4.6          futile.logger_1.4.3 
+    ## [49] grid_4.0.0           RCurl_1.98-1.2       iterators_1.0.12    
+    ## [52] bitops_1.0-6         labeling_0.3         rmarkdown_2.2       
+    ## [55] gtable_0.3.0         codetools_0.2-16     DBI_1.1.0           
+    ## [58] reshape2_1.4.4       R6_2.4.1             gridExtra_2.3       
+    ## [61] knitr_1.28           bit_1.1-15.2         futile.options_1.0.1
+    ## [64] stringi_1.4.6        Rcpp_1.0.4.6         vctrs_0.3.0         
+    ## [67] biobroom_1.20.0      tidyselect_1.1.0     xfun_0.14
+
+<div id="refs" class="references">
+
+<div id="ref-Becher2016">
+
+Becher, I., Werner, T., Doce, C., Zaal, E.A., Tögel, I., Khan, C.A.,
+Rueger, A., Muelbaier, M., Salzer, E., Berkers, C.R., et al. (2016).
+Thermal profiling reveals phenylalanine hydroxylase as an off-target of
+panobinostat. Nature Chemical Biology *12*, 908–910.
+
+</div>
+
+<div id="ref-Savitski2018">
+
+Savitski, M.M., Zinn, N., Faelth-Savitski, M., Poeckel, D., Gade, S.,
+Becher, I., Muelbaier, M., Wagner, A.J., Strohmer, K., Werner, T., et
+al. (2018). Multiplexed Proteome Dynamics Profiling Reveals Mechanisms
+Controlling Protein Homeostasis. Cell 1–15.
+
+</div>
+
+</div>
