@@ -386,7 +386,7 @@ importSettings$configTable <- as.data.frame(config_tab)
 attr(thres_approach_df, "importSettings") <- importSettings
 
 # normalize fold changes
-thres_approach_norm <- tpp2dNormalize(data = thres_approach_df)
+thres_approach_norm <- TPP::tpp2dNormalize(data = thres_approach_df)
 
 # adapt curve fit function to work with synthetic data
 tpp2dCurveFitAdapted <- function (configFile = NULL, data, 
@@ -446,7 +446,7 @@ tpp2dCurveFitAdapted <- function (configFile = NULL, data,
     message("Performing TPP-CCR dose response curve fitting and generating result table...")
     cfgIn <- TPP:::convert_2D_cfgTable_to_CCR_cfgTable(configTable = configTable)
     datIn <- as.data.frame(data)
-    CCRresult <- suppressMessages(analyzeTPPCCR(configTable = cfgIn, 
+    CCRresult <- suppressMessages(TPP::analyzeTPPCCR(configTable = cfgIn, 
         data = datIn, nCores = nCores, resultPath = NULL, plotCurves = FALSE, 
         fcStr = finalFcPrefix, naStrs = c("NA", "n/d", "NaN", 
             "<NA>"), qualColName = "qupm", xlsxExport = FALSE, 
@@ -592,18 +592,6 @@ b100_pr_df <- bind_rows(
   ungroup 
   
 
-variantColors <- c("royalblue", "darkblue", 
-                   "purple", "purple4", 
-                   "orange", "orange3",
-                   "turquoise4")
-names(variantColors) <- c("DLPTP standard, B = 100",
-                          "DLPTP moderated, B = 100",
-                          "DLPTP standard, B = 20",
-                          "DLPTP moderated, B = 20",
-                          "DLPTP standard, B = 5",
-                          "DLPTP moderated, B = 5",
-                          "Threshold-based\napproach")
-
 ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr, 
                        color = as.factor(variant))) + 
   geom_path(size = 0.5) + 
@@ -670,8 +658,14 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
               linetype = "dashed") +
   coord_cartesian(xlim = c(0, 0.2),
                   ylim = c(0, 0.2)) +
-  scale_color_manual("variant", 
-                     values = variantColors) +
+  scale_color_manual(
+    "variant",
+    values = c("deepskyblue4",
+               "deepskyblue3",
+               "deepskyblue1",
+               "darkorchid4",
+               "darkorchid3",
+               "darkorchid1")) +
   labs(x = expression(alpha*" level cutoff"),
        y = "observed FDR") +
   theme_classic()

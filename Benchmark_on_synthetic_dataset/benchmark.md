@@ -132,10 +132,8 @@ library(TPP)
 
 Download and read in required datasets for true positive spike-in
 profiles: - Panobinostat cell dataset Becher et al. (2016) - JQ1 lysate
-dataset Savitski et al. (2018) - Ampicillin *E. coli* lysate
-(<span class="citeproc-not-found" data-reference-id="Mateus2018">**???**</span>)
-- ATP crude lysate rep1
-(<span class="citeproc-not-found" data-reference-id="Sridharan2019">**???**</span>)
+dataset Savitski et al. (2018) - Ampicillin *E. coli* lysate Mateus et
+al. (2018) - ATP crude lysate rep1 Sridharan et al. (2019)
 
 ``` r
 # Pano datasets
@@ -481,7 +479,7 @@ importSettings$configTable <- as.data.frame(config_tab)
 attr(thres_approach_df, "importSettings") <- importSettings
 
 # normalize fold changes
-thres_approach_norm <- tpp2dNormalize(data = thres_approach_df)
+thres_approach_norm <- TPP::tpp2dNormalize(data = thres_approach_df)
 ```
 
     ## Found the following column name in attr(data, 'importSettings')$proteinIdCol: 'representative'
@@ -559,7 +557,7 @@ tpp2dCurveFitAdapted <- function (configFile = NULL, data,
     message("Performing TPP-CCR dose response curve fitting and generating result table...")
     cfgIn <- TPP:::convert_2D_cfgTable_to_CCR_cfgTable(configTable = configTable)
     datIn <- as.data.frame(data)
-    CCRresult <- suppressMessages(analyzeTPPCCR(configTable = cfgIn, 
+    CCRresult <- suppressMessages(TPP::analyzeTPPCCR(configTable = cfgIn, 
         data = datIn, nCores = nCores, resultPath = NULL, plotCurves = FALSE, 
         fcStr = finalFcPrefix, naStrs = c("NA", "n/d", "NaN", 
             "<NA>"), qualColName = "qupm", xlsxExport = FALSE, 
@@ -867,18 +865,6 @@ b100_pr_df <- bind_rows(
     ## `summarise()` regrouping output by 'variant' (override with `.groups` argument)
 
 ``` r
-variantColors <- c("royalblue", "darkblue", 
-                   "purple", "purple4", 
-                   "orange", "orange3",
-                   "turquoise4")
-names(variantColors) <- c("DLPTP standard, B = 100",
-                          "DLPTP moderated, B = 100",
-                          "DLPTP standard, B = 20",
-                          "DLPTP moderated, B = 20",
-                          "DLPTP standard, B = 5",
-                          "DLPTP moderated, B = 5",
-                          "Threshold-based\napproach")
-
 ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr, 
                        color = as.factor(variant))) + 
   geom_path(size = 0.5) + 
@@ -949,8 +935,14 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
               linetype = "dashed") +
   coord_cartesian(xlim = c(0, 0.2),
                   ylim = c(0, 0.2)) +
-  scale_color_manual("variant", 
-                     values = variantColors) +
+  scale_color_manual(
+    "variant",
+    values = c("deepskyblue4",
+               "deepskyblue3",
+               "deepskyblue1",
+               "darkorchid4",
+               "darkorchid3",
+               "darkorchid1")) +
   labs(x = expression(alpha*" level cutoff"),
        y = "observed FDR") +
   theme_classic()
@@ -1020,12 +1012,30 @@ panobinostat. Nature Chemical Biology *12*, 908–910.
 
 </div>
 
+<div id="ref-Mateus2018">
+
+Mateus, A., Bobonis, J., Kurzawa, N., Stein, F., Helm, D., Hevler, J.,
+Typas, A., and Savitski, M.M. (2018). Thermal proteome profiling in
+bacteria: Probing protein state in vivo. Molecular Systems Biology *14*,
+e8242.
+
+</div>
+
 <div id="ref-Savitski2018">
 
 Savitski, M.M., Zinn, N., Faelth-Savitski, M., Poeckel, D., Gade, S.,
 Becher, I., Muelbaier, M., Wagner, A.J., Strohmer, K., Werner, T., et
 al. (2018). Multiplexed Proteome Dynamics Profiling Reveals Mechanisms
 Controlling Protein Homeostasis. Cell 1–15.
+
+</div>
+
+<div id="ref-Sridharan2019">
+
+Sridharan, S., Kurzawa, N., Werner, T., Günthner, I., Helm, D., Huber,
+W., Bantscheff, M., and Savitski, M.M. (2019). Proteome-wide solubility
+and thermal stability profiling reveals distinct regulatory roles for
+ATP. Nature Communications *10*, 1155.
 
 </div>
 
