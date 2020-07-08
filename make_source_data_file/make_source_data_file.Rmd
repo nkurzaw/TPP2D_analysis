@@ -1,0 +1,484 @@
+---
+title: "Make 'Source data file'"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    rmarkdown::github_document:
+    html_preview: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.path = "md_files/source_data-",
+  out.width = "100%"
+)
+reRun <- FALSE
+```
+
+```{r}
+library(tidyverse)
+library(TPP2D)
+library(readxl)
+library(openxlsx)
+```
+
+# Main figures
+
+## Figure 1:               
+- schematic illustrations only              
+        
+        
+## Figure 2 - Benchmark        
+
+```{r}
+sim_tp_df <- readRDS("../pre_run_data/sim_tp_df.rds")
+sim_params_df <- readRDS("../pre_run_data/sim_params_df.rds")
+sim_fstat_df <- computeFStatFromParams(sim_params_df)
+sim_s2_null_df <- readRDS("../pre_run_data/sim_s2_null_df.rds")
+sim_s3_null_df <- readRDS("../pre_run_data/sim_s3_null_df.rds")
+thres_found_recurrently <- readRDS("../pre_run_data/thres_found_recurrently.rds")
+```
+
+Define function to compute the precision and recall based on the simulated dataset:
+
+```{r}
+computePrecisionRecall <- function(fdr_df,
+                                   alpha_range = seq(0.01, 1, by = 0.01),
+                                   ntp = 50){
+  out_pr_df <- bind_rows(tibble(precision = 1, recall = 0, alpha = 0),
+                         bind_rows(lapply(alpha_range, function(alpha_i){
+    hits_df <- TPP2D::findHits(fdr_df, alpha = alpha_i)
+    
+    r_df <- tibble(
+        precision = length(which(!grepl("protein", hits_df$clustername)))/
+            nrow(hits_df),
+        recall = length(which(!grepl("protein", hits_df$clustername)))/
+            ntp,alpha = alpha_i)
+  })))
+  
+  return(out_pr_df)
+}
+
+```
+
+Get FDR estimates for different numbers of bootstraps
+```{r}
+sim_fdr_df_s2_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s2_null_df,
+                                     squeezeDenominator = FALSE)
+sim_fdr_df_s3_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s3_null_df,
+                                     squeezeDenominator = FALSE)
+
+sim_fdr_df_s2_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s2_null_df,
+                                     squeezeDenominator = TRUE)
+sim_fdr_df_s3_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s3_null_df,
+                                     squeezeDenominator = TRUE)
+
+sim_fdr_df_s2_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s2_null_df, dataset %in%
+                                            paste("bootstrap", 1:20, sep = "_")),
+                         squeezeDenominator = FALSE)
+sim_fdr_df_s3_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s3_null_df, dataset %in%
+                                            paste("bootstrap", 1:20, sep = "_")),
+                         squeezeDenominator = FALSE)
+
+sim_fdr_df_s2_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s2_null_df, dataset %in%
+                                            paste("bootstrap", 1:20, sep = "_")),
+                         squeezeDenominator = TRUE)
+sim_fdr_df_s3_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s3_null_df, dataset %in%
+                                            paste("bootstrap", 1:20, sep = "_")),
+                         squeezeDenominator = TRUE)
+
+sim_fdr_df_s2_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s2_null_df, dataset %in%
+                                            paste("bootstrap", 1:5, sep = "_")),
+                         squeezeDenominator = FALSE)
+sim_fdr_df_s3_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s3_null_df, dataset %in%
+                                            paste("bootstrap", 1:5, sep = "_")),
+                         squeezeDenominator = FALSE)
+
+sim_fdr_df_s2_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s2_null_df, dataset %in%
+                                            paste("bootstrap", 1:5, sep = "_")),
+                         squeezeDenominator = TRUE)
+sim_fdr_df_s3_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                         df_null = filter(sim_s3_null_df, dataset %in%
+                                            paste("bootstrap", 1:5, sep = "_")),
+                         squeezeDenominator = TRUE)
+```
+
+Compute precision and recall for each of the FDR estimates based on the different number of bootstraps
+```{r}
+pr_b100_2_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b100_byMsExp, ntp = 80)
+pr_b100_3_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b100_byMsExp, ntp = 80)
+
+pr_b100_2_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b100_byMsExp_mod, ntp = 80)
+pr_b100_3_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b100_byMsExp_mod, ntp = 80)
+
+
+pr_b20_2_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b20_byMsExp, ntp = 80)
+pr_b20_3_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b20_byMsExp, ntp = 80)
+
+pr_b20_2_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b20_byMsExp_mod, ntp = 80)
+pr_b20_3_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b20_byMsExp_mod, ntp = 80)
+
+
+pr_b5_2_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b5_byMsExp, ntp = 80)
+pr_b5_3_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b5_byMsExp, ntp = 80)
+
+pr_b5_2_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s2_b5_byMsExp_mod, ntp = 80)
+pr_b5_3_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s3_b5_byMsExp_mod, ntp = 80)
+
+all_alpha_fdr_df <- bind_rows(
+   pr_b100_2_byMsExp %>% 
+     mutate(variant = "DLPTP standard, B = 100"), 
+   pr_b100_3_byMsExp %>% 
+     mutate(variant = "DLPTP standard, B = 100"), 
+   pr_b100_2_byMsExp_mod %>% 
+     mutate(variant = "DLPTP moderated, B = 100"),
+   pr_b100_3_byMsExp_mod %>% 
+     mutate(variant = "DLPTP moderated, B = 100"),
+   pr_b20_2_byMsExp %>%
+     mutate(variant = "DLPTP standard, B = 20"),
+   pr_b20_3_byMsExp %>%
+     mutate(variant = "DLPTP standard, B = 20"),
+   pr_b20_2_byMsExp_mod %>%
+     mutate(variant = "DLPTP moderated, B = 20"),
+   pr_b20_3_byMsExp_mod %>%
+     mutate(variant = "DLPTP moderated, B = 20"),
+   pr_b5_2_byMsExp %>%
+     mutate(variant = "DLPTP standard, B = 5"),
+   pr_b5_3_byMsExp %>%
+     mutate(variant = "DLPTP standard, B = 5"),
+   pr_b5_2_byMsExp_mod %>%
+     mutate(variant = "DLPTP moderated, B = 5"),
+   pr_b5_3_byMsExp_mod %>%
+     mutate(variant = "DLPTP moderated, B = 5")) %>% 
+  group_by(variant, alpha) %>% 
+  summarize(mean_fdr = mean(1-precision),
+            mean_tpr = mean(recall),
+            sd_fdr = sd(1-precision),
+            sd_tpr = sd(recall)) %>% 
+  ungroup
+
+
+ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
+  geom_point(aes(color = variant)) +
+  geom_path(aes(color = variant)) +
+  geom_abline(slope = 1, 
+              color = "darkgray",
+              linetype = "dashed") +
+  coord_cartesian(xlim = c(0, 0.2),
+                  ylim = c(0, 0.2)) +
+  scale_color_manual(
+    "variant",
+    values = c("deepskyblue4",
+               "deepskyblue3",
+               "deepskyblue1",
+               "darkorchid4",
+               "darkorchid3",
+               "darkorchid1")) +
+  labs(x = expression(alpha*" level cutoff"),
+       y = "observed FDR") +
+  theme_classic()
+
+```
+
+
+```{r}
+b100_pr_df <- bind_rows(
+  pr_b100_2_byMsExp %>% 
+    mutate(variant = "DLPTP standard, B = 100"), 
+  pr_b100_3_byMsExp %>% 
+    mutate(variant = "DLPTP standard, B = 100"),
+   pr_b100_2_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated, B = 100"),
+  pr_b100_3_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated, B = 100"),
+  tibble(
+    precision = length(thres_found_recurrently[
+      !grepl("protein",thres_found_recurrently)])/
+      length(thres_found_recurrently),
+    recall = length(thres_found_recurrently[
+      !grepl("protein", thres_found_recurrently)])/80,
+    alpha = 0,
+    variant = "Threshold-based approach")) %>% 
+  group_by(variant, alpha) %>% 
+  summarize(mean_fdr = mean(1-precision),
+            mean_tpr = mean(recall),
+            sd_fdr = sd(1-precision),
+            sd_tpr = sd(recall)) %>% 
+  ungroup 
+  
+
+ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr, 
+                       color = as.factor(variant))) + 
+  geom_path(size = 0.5) + 
+  geom_point(shape = 8, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.1"))) +
+    geom_point(shape = 3, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.05"))) +
+    geom_point(shape = 4, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.01"))) +
+  geom_point(shape = 6, size = 3,
+             data = filter(filter(b100_pr_df, 
+                                  variant == "Threshold-based\napproach"))) +
+  scale_color_manual("variant", 
+                     values = c("deepskyblue4", "darkorchid4", "darkorange1")) +
+  labs(x = "FDR", y = "TPR") +
+  geom_vline(xintercept = c(0.01, 0.05, 0.1),
+             linetype = "dashed", alpha = 0.65,
+             size = 0.25) +
+  coord_fixed() +
+  theme_classic() +
+  theme(legend.position = c(0.75, 0.2))
+
+```
+
+## Figure 3 - Panobinostat & JQ1
+
+### Panobinostat
+```{r}
+pano_cell_raw <- read_xlsx(
+    file.path("..", "Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016",
+              "41589_2016_BFnchembio2185_MOESM254_ESM.xlsx"), 
+                           sheet = 1, skip = 1) %>% 
+  dplyr::select(representative,
+                clustername,
+                experiment = ms_experiment,
+                qupm,
+                qusm,
+                temperature,
+                matches("sumionarea"),
+                -matches("total"),
+                matches("rel_fc_protein"),
+                -matches("transformed"),
+                -matches("orig"),
+                -matches("log2rel"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+pano_cell_fil <- resolveAmbiguousProteinNames(pano_cell_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+pano_cell_df <- recomputeSignalFromRatios(pano_cell_fil)
+```
+
+Compute null and alternative model fits and extract parameters
+```{r eval=reRun}
+pano_params_df <- getModelParamsDf(pano_cell_df, maxit = 500)
+saveRDS(pano_params_df, file = "../pre_run_data/pano_params_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pano_params_df <- readRDS("../pre_run_data/pano_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+pano_fstat_df <- computeFStatFromParams(pano_params_df)
+```
+
+Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+```{r eval=reRun}
+set.seed(12, kind = "L'Ecuyer-CMRG")
+pano_null_df <- bootstrapNullAlternativeModel(
+  df = pano_cell_df, params_df = pano_params_df, 
+  maxit = 500, B = 100,
+  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
+  verbose = FALSE)
+saveRDS(pano_null_df, file = "../pre_run_data/pano_null_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+pano_null_df <- readRDS("../pre_run_data/pano_null_df.rds")
+```
+
+Compute FDR and find hits:
+
+```{r}
+pano_fdr_df <- getFDR(df_out = pano_fstat_df,
+                     df_null = pano_null_df,
+                     squeezeDenominator = TRUE)
+  
+pano_hits_df <- findHits(pano_fdr_df, alpha = 0.1)
+```
+
+Make output table
+```{r}
+pano_out_tab <- pano_fdr_df %>% filter(dataset == "true") %>% 
+    dplyr::select(representative, clustername, nObsRound, 
+                  rssH0,  rssH1, F_statistic) %>% 
+    mutate(stabilized_hit_at_10percent_FDR = 
+               case_when(
+                   representative %in% 
+                       filter(pano_hits_df, slopeH1 > 0)$representative ~ 
+                       TRUE, TRUE ~ FALSE),
+           destabilized_hit_at_10percent_FDR = 
+               case_when(representative %in% 
+                             filter(pano_hits_df, slopeH1 < 0)$representative ~
+                             TRUE, TRUE ~ FALSE)) 
+```
+
+Make sure we can still make the plot
+```{r}
+ggplot(pano_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+    geom_point(color = "gray", alpha = 0.5) +
+    geom_point(color = "steelblue", alpha = 0.5, 
+               data = filter(pano_out_tab, stabilized_hit_at_10percent_FDR)) +
+    geom_point(color = "orange", alpha = 0.5, 
+               data = filter(pano_out_tab, destabilized_hit_at_10percent_FDR)) +
+    coord_cartesian(xlim = c(-12.5, 7.5))
+```
+### JQ1
+
+```{r}
+jq1_lys_raw <- read_xlsx(file.path(
+  "../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/", 
+  "Savitski_et_al_Figure_3/Supplementary Dataset 2_2D-TPP.xlsx"), 
+  sheet = 3, skip = 1) %>% 
+  dplyr::select(representative = `Accession No.`,
+                clustername = `protein name`,
+                qupm = QUPM,
+                qusm = QUSM,
+                temperature,
+                matches("sumionarea"),
+                -matches("total"),
+                matches("rel_fc_protein"),
+                -matches("transformed"),
+                -matches("orig"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+jq1_lys_fil <- resolveAmbiguousProteinNames(jq1_lys_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+jq1_lys_df <- recomputeSignalFromRatios(jq1_lys_fil)
+```
+
+Compute null and alternative model fits and extract parameters
+```{r eval=reRun}
+jq1_params_df <- getModelParamsDf(jq1_lys_df, maxit = 500)
+saveRDS(jq1_params_df, file = "../pre_run_data/jq1_params_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+jq1_params_df <- readRDS("../pre_run_data/jq1_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+jq1_fstat_df <- computeFStatFromParams(jq1_params_df)
+```
+
+Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+```{r eval=reRun}
+set.seed(12, kind = "L'Ecuyer-CMRG")
+jq1_null_df <- bootstrapNullAlternativeModel(
+  df = jq1_lys_df, params_df = jq1_params_df, 
+  maxit = 500, B = 100,
+  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
+  verbose = FALSE)
+saveRDS(jq1_null_df, file = "../pre_run_data/jq1_null_df.rds")
+```
+
+```{r eval=!reRun, echo=FALSE}
+jq1_null_df <- readRDS("../pre_run_data/jq1_null_df.rds")
+```
+
+Compute FDR and find hits:
+
+```{r}
+jq1_fdr_df <- getFDR(df_out = jq1_fstat_df,
+                     df_null = jq1_null_df,
+                     squeezeDenominator = TRUE)
+  
+jq1_hits_df <- findHits(jq1_fdr_df, alpha = 0.1)
+```
+
+Make output table
+
+```{r}
+jq1_out_tab <- left_join(
+    jq1_lys_raw,  
+    jq1_fdr_df %>% 
+        filter(dataset == "true") %>% 
+        dplyr::select(representative, clustername, nObsRound, 
+                      rssH0,  rssH1, F_statistic),
+    by = c("representative", "clustername")) %>% 
+    mutate(stabilized_hit_at_10percent_FDR = 
+               case_when(representative %in% 
+                             filter(jq1_hits_df, slopeH1 > 0)$representative ~
+                             TRUE, TRUE ~ FALSE),
+           destabilized_hit_at_10percent_FDR = 
+               case_when(representative %in% 
+                             filter(jq1_hits_df, slopeH1 < 0)$representative ~
+                             TRUE, TRUE ~ FALSE))
+```
+
+Make sure we can still make the plot
+```{r}
+ggplot(jq1_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+    geom_point(color = "gray", alpha = 0.5) +
+    geom_point(color = "steelblue", alpha = 0.5, 
+               data = filter(jq1_out_tab, stabilized_hit_at_10percent_FDR)) +
+    geom_point(color = "orange", alpha = 0.5, 
+               data = filter(jq1_out_tab, destabilized_hit_at_10percent_FDR)) +
+    coord_cartesian(xlim = c(-12.5, 7.5))
+```
+
+## Figure 4 - PCI-34051 and BRD-3811
+
+
+
+
+# Supplementary figures
