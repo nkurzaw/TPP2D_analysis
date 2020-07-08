@@ -20,6 +20,7 @@ This repository contains code to reproduce analyses performed by Kurzawa et al. 
     - GTP_analysis.md       
 - Benchmark_on_synthetic_dataset
     - benchmark.Rmd
+    - benchmark.md
 
 ## References
 
