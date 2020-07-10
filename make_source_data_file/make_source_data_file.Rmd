@@ -298,13 +298,7 @@ pano_cell_fil <- resolveAmbiguousProteinNames(pano_cell_raw)
 pano_cell_df <- recomputeSignalFromRatios(pano_cell_fil)
 ```
 
-Compute null and alternative model fits and extract parameters
-```{r eval=reRun}
-pano_params_df <- getModelParamsDf(pano_cell_df, maxit = 500)
-saveRDS(pano_params_df, file = "../pre_run_data/pano_params_df.rds")
-```
-
-```{r eval=!reRun, echo=FALSE}
+```{r}
 pano_params_df <- readRDS("../pre_run_data/pano_params_df.rds")
 ```
 
@@ -315,7 +309,7 @@ pano_fstat_df <- computeFStatFromParams(pano_params_df)
 
 Get $B$,prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 pano_null_df <- readRDS("../pre_run_data/pano_null_df.rds")
 ```
 
@@ -379,8 +373,7 @@ pano_venn_df <- tibble(
         filter(pano_thres_df, protein_stabilized_neighb_temp_good_curves_count > 1)$clustername),
     Threshold_based_destabilized_hits = as.numeric(
       gene_name %in% 
-        filter(pano_thres_df, protein_destabilized_neighb_temp_good_curves_count > 1)$clustername),
-    )
+        filter(pano_thres_df, protein_destabilized_neighb_temp_good_curves_count > 1)$clustername))
 ```
 
 
@@ -431,7 +424,7 @@ jq1_params_df <- getModelParamsDf(jq1_lys_df, maxit = 500)
 saveRDS(jq1_params_df, file = "../pre_run_data/jq1_params_df.rds")
 ```
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 jq1_params_df <- readRDS("../pre_run_data/jq1_params_df.rds")
 ```
 
@@ -442,7 +435,7 @@ jq1_fstat_df <- computeFStatFromParams(jq1_params_df)
 
 Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 jq1_null_df <- readRDS("../pre_run_data/jq1_null_df.rds")
 ```
 
@@ -550,7 +543,7 @@ pci_fil <- resolveAmbiguousProteinNames(pci_raw)
 pci_df <- recomputeSignalFromRatios(pci_fil)
 ```
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 pci_params_df <- readRDS("../pre_run_data/pci_params_df.rds")
 ```
 
@@ -561,7 +554,7 @@ pci_fstat_df <- computeFStatFromParams(pci_params_df)
 
 Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 pci_null_df <- readRDS("../pre_run_data/pci_null_df.rds")
 ```
 
@@ -590,7 +583,7 @@ pci_out_tab <- left_join(
   by = c("representative", "clustername")) %>% 
   mutate(affected_by_carry_over = case_when(
     clustername %in% carry_over_cases ~ TRUE, TRUE ~ FALSE),
-    tabilized_hit_at_10percent_FDR = case_when(
+    stabilized_hit_at_10percent_FDR = case_when(
       representative %in% 
         filter(pci_hits_df, slopeH1 > 0)$representative ~ TRUE, 
       TRUE ~ FALSE),
@@ -648,7 +641,7 @@ brd_df <- recomputeSignalFromRatios(brd_fil)
 
 Compute null and alternative model fits and extract parameters
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 brd_params_df <- readRDS("../pre_run_data/brd_params_df.rds")
 ```
 
@@ -659,9 +652,23 @@ brd_fstat_df <- computeFStatFromParams(brd_params_df)
 
 Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
-```{r eval=!reRun, echo=FALSE}
+```{r}
 brd_null_df <- readRDS("../pre_run_data/brd_null_df.rds")
 ```
+
+```{r}
+## manually identified carry-over cases
+carry_over_cases_brd3811 <- c("NQO1", "CSK")
+
+brd_fdr_df <- getFDR(df_out = brd_fstat_df %>% 
+                         filter(!clustername %in% carry_over_cases_brd3811),
+                     df_null = brd_null_df %>% 
+                         filter(!clustername %in% carry_over_cases_brd3811),
+                     squeezeDenominator = TRUE)
+  
+brd_hits_df <- findHits(brd_fdr_df, alpha = 0.1)
+```
+
 
 ```{r}
 brd_out_tab <- left_join(
@@ -674,11 +681,11 @@ brd_out_tab <- left_join(
       carry_over_cases_brd3811 ~ TRUE, TRUE ~ FALSE),
     stabilized_hit_at_10percent_FDR = case_when(
       representative %in% 
-        filter(hdac8ii_hits_df, slopeH1 > 0)$representative ~ TRUE, 
+        filter(brd_hits_df, slopeH1 > 0)$representative ~ TRUE, 
       TRUE ~ FALSE),
     destabilized_hit_at_10percent_FDR = case_when(
       representative %in% 
-        filter(hdac8ii_hits_df, slopeH1 < 0)$representative ~ TRUE, 
+        filter(brd_hits_df, slopeH1 < 0)$representative ~ TRUE, 
       TRUE ~ FALSE))
 ```
 
@@ -877,8 +884,7 @@ UpSetR::upset(set_intersect_df, nsets = 5)
 ```{r}
 brd4_jq1_df <- filter(jq1_lys_df, clustername == "BRD4") %>% 
   dplyr::select(gene_name = clustername, qupm, qusm, 
-                temperature, conc, log_conc, log2_value,
-                rel_value)
+                temperature, conc, log2_value, rel_value)
 ```
 
 
@@ -899,8 +905,7 @@ examples_pano_df <- filter(pano_cell_df, clustername %in%
                              c("FADS1", "HDAC1", "ZNF384",
                                "DHRS1", "HDAC6")) %>% 
   dplyr::select(gene_name = clustername, qupm, qusm, 
-                temperature, conc, log_conc, log2_value, 
-                rel_value)
+                temperature, conc, log2_value, rel_value)
 ```
 
 ## Figure S4
@@ -914,36 +919,36 @@ examples_pano_df <- filter(pano_cell_df, clustername %in%
 ```{r}
 csk_pci_df <- filter(pci_df, clustername == "CSK") %>% 
   dplyr::select(gene_name = clustername, qupm, qusm, 
-                temperature, conc, log_conc, log2_value,
-                rel_value)
+                temperature, conc, log2_value, rel_value)
 ```
 
 
 # Make final list
 ```{r}
-out_list <- c(
-  "Figure2a" = all_alpha_fdr_df,
-  "Figure2b" = b100_pr_df,
-  "Figure3a/FigureS2a" = pano_out_tab,
-  "Figure3b/FigureS2b" = jq1_out_tab,
-  "Figure4b/FigureS4a" = pci_out_tab,
-  "Figure4d/FigureS4b" = brd_out_tab,
-  "Figure4e" = lap3_tab,
-  "Figure5a" = gtp_out_tab,
-  "Figure5b" = set_intersect_df,
-  "FigureS1" = brd4_jq1_df,
+out_list <- list(
+  "Figure2a" = all_alpha_fdr_df %>% as.data.frame(),
+  "Figure2b" = b100_pr_df %>% as.data.frame(),
+  "Figure3a_FigureS2a" = pano_out_tab %>% as.data.frame(),
+  "Figure3b_FigureS2b" = jq1_out_tab %>% as.data.frame(),
+  "Figure4b_FigureS4a" = pci_out_tab %>% as.data.frame(),
+  "Figure4d_FigureS4b" = brd_out_tab %>% as.data.frame(),
+  "Figure4e" = lap3_tab %>% as.data.frame(),
+  "Figure5a" = gtp_out_tab %>% as.data.frame(),
+  "Figure5b" = set_intersect_df %>% as.data.frame(),
+  "FigureS1" = brd4_jq1_df %>% as.data.frame(),
   # "FigureS2a" = pano_out_tab,
   # "FigureS2b" = jq1_out_tab,
-  "FigureS2c" = pano_venn_df,
-  "FigureS2d" = jq1_venn_df,
-  "FigureS3a-e" = examples_pano_df,
-  "FigureS4c" = csk_pci_df
+  "FigureS2c" = pano_venn_df %>% as.data.frame(),
+  "FigureS2d" = jq1_venn_df %>% as.data.frame(),
+  "FigureS3a-e" = examples_pano_df %>% as.data.frame(),
+  "FigureS4c" = csk_pci_df %>% as.data.frame()
 )
 ```
 
 Write excel table
 ```{r}
-write.xlsx(out_list, col.names=TRUE, row.names=TRUE, asTable = TRUE, 
+library(openxlsx)
+write.xlsx(out_list, col.names = TRUE, row.names = FALSE, asTable = TRUE, 
            file = "Kurzawa_et_al_source_data.xlsx")
 
 ```
