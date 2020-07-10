@@ -313,16 +313,7 @@ Compute *F* statistics
 pano_fstat_df <- computeFStatFromParams(pano_params_df)
 ```
 
-Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
-```{r eval=reRun}
-set.seed(12, kind = "L'Ecuyer-CMRG")
-pano_null_df <- bootstrapNullAlternativeModel(
-  df = pano_cell_df, params_df = pano_params_df, 
-  maxit = 500, B = 100,
-  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
-  verbose = FALSE)
-saveRDS(pano_null_df, file = "../pre_run_data/pano_null_df.rds")
-```
+Get $B$,prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
 ```{r eval=!reRun, echo=FALSE}
 pano_null_df <- readRDS("../pre_run_data/pano_null_df.rds")
@@ -364,6 +355,35 @@ ggplot(pano_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
                data = filter(pano_out_tab, destabilized_hit_at_10percent_FDR)) +
     coord_cartesian(xlim = c(-12.5, 7.5))
 ```
+
+```{r}
+pano_thres_df <- read_xlsx("../Panobinostat_HepG2_cell_2DTPP_Becher_et_al_2016/41589_2016_BFnchembio2185_MOESM254_ESM.xlsx", 
+                          sheet = 1, skip = 1) %>% 
+  filter(qupm > 1)
+
+all_pano_hits <- union(
+  (pano_thres_df %>% 
+     filter(protein_stabilized_neighb_temp_good_curves_count > 1 | 
+              protein_destabilized_neighb_temp_good_curves_count > 1) %>% 
+     filter(!duplicated(clustername)))$clustername,
+  pano_hits_df$clustername)
+
+pano_venn_df <- tibble(
+  gene_name = all_pano_hits) %>% mutate(
+    DLPTP_stabilized_hits = as.numeric(
+      gene_name %in% filter(pano_hits_df, slopeH1 > 0)$clustername),
+    DLPTP_destabilized_hits = as.numeric(
+      gene_name %in% filter(pano_hits_df, slopeH1 < 0)$clustername),
+    Threshold_based_stabilized_hits = as.numeric(
+      gene_name %in% 
+        filter(pano_thres_df, protein_stabilized_neighb_temp_good_curves_count > 1)$clustername),
+    Threshold_based_destabilized_hits = as.numeric(
+      gene_name %in% 
+        filter(pano_thres_df, protein_destabilized_neighb_temp_good_curves_count > 1)$clustername),
+    )
+```
+
+
 ### JQ1
 
 ```{r}
@@ -420,16 +440,7 @@ Compute *F* statistics
 jq1_fstat_df <- computeFStatFromParams(jq1_params_df)
 ```
 
-Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
-```{r eval=reRun}
-set.seed(12, kind = "L'Ecuyer-CMRG")
-jq1_null_df <- bootstrapNullAlternativeModel(
-  df = jq1_lys_df, params_df = jq1_params_df, 
-  maxit = 500, B = 100,
-  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
-  verbose = FALSE)
-saveRDS(jq1_null_df, file = "../pre_run_data/jq1_null_df.rds")
-```
+Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
 ```{r eval=!reRun, echo=FALSE}
 jq1_null_df <- readRDS("../pre_run_data/jq1_null_df.rds")
@@ -476,12 +487,38 @@ ggplot(jq1_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
     coord_cartesian(xlim = c(-12.5, 7.5))
 ```
 
+```{r}
+jq1_thres_df <- read_xlsx("../JQ1_THP1_lysate_2DTPP_Savitski_et_al_2018/Savitski_et_al_Figure_3/Supplementary Dataset 2_2D-TPP.xlsx", sheet = 3, skip = 1) %>% 
+  filter(QUPM > 1)
+
+all_jq1_hits <- union(
+  (jq1_thres_df %>% 
+     filter(protein_stabilized_neighb_temp_good_curves_count > 1 | 
+              protein_destabilized_neighb_temp_good_curves_count > 1) %>% 
+     filter(!duplicated(`protein name`)))$`protein name`,
+  jq1_hits_df$clustername)
+
+jq1_venn_df <- tibble(
+  gene_name = all_jq1_hits) %>% mutate(
+    DLPTP_stabilized_hits = as.numeric(
+      gene_name %in% filter(jq1_hits_df, slopeH1 > 0)$clustername),
+    DLPTP_destabilized_hits = as.numeric(
+      gene_name %in% filter(jq1_hits_df, slopeH1 < 0)$clustername),
+    Threshold_based_stabilized_hits = as.numeric(
+      gene_name %in% 
+        filter(jq1_thres_df, protein_stabilized_neighb_temp_good_curves_count > 1)$`protein name`),
+    Threshold_based_destabilized_hits = as.numeric(
+      gene_name %in% 
+        filter(jq1_thres_df, protein_destabilized_neighb_temp_good_curves_count > 1)$`protein name`),
+    )
+```
+
 ## Figure 4 - PCI-34051 and BRD-3811
 
 
 ###  PCI-34051
 ```{r}
-pci_raw <- read_xlsx("Supplementary_Data_2.xlsx", sheet = "PCI34051") %>% 
+pci_raw <- read_xlsx("../PCI-34051_HL60_cell_2DTPP/Supplementary_Data_2.xlsx", sheet = "PCI34051") %>% 
   dplyr::select(representative,
                 clustername,
                 qupm,
@@ -513,6 +550,401 @@ pci_fil <- resolveAmbiguousProteinNames(pci_raw)
 pci_df <- recomputeSignalFromRatios(pci_fil)
 ```
 
+```{r eval=!reRun, echo=FALSE}
+pci_params_df <- readRDS("../pre_run_data/pci_params_df.rds")
+```
 
+Compute *F* statistics
+```{r}
+pci_fstat_df <- computeFStatFromParams(pci_params_df)
+```
+
+Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+
+```{r eval=!reRun, echo=FALSE}
+pci_null_df <- readRDS("../pre_run_data/pci_null_df.rds")
+```
+
+```{r}
+## manually identified carry-over cases
+carry_over_cases <- 
+  c("ALDH1B1", "BTK", "CAMK2G", "CSK", "CSNK2A1", "CSNK2A2", "GAK",
+    "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
+    "NQO1", "PDXK", "PRKAA1", "PRKAG1", "RPS6KA1", "ULK3",
+    "CDK2", "CDK5")
+
+pci_fstat_df <- computeFStatFromParams(pci_params_df) %>% 
+  filter(!clustername %in% carry_over_cases)
+pci_fdr_df <- getFDR(df_out = pci_fstat_df,
+                     df_null = pci_null_df %>% 
+                       filter(!clustername %in% carry_over_cases))
+
+pci_hits_df <- findHits(pci_fdr_df, alpha = 0.1)
+
+
+pci_out_tab <- left_join(
+  pci_raw, pci_fdr_df %>% 
+    filter(dataset == "true") %>% 
+    dplyr::select(representative, clustername, 
+                  nObsRound, rssH0,  rssH1, F_statistic),
+  by = c("representative", "clustername")) %>% 
+  mutate(affected_by_carry_over = case_when(
+    clustername %in% carry_over_cases ~ TRUE, TRUE ~ FALSE),
+    tabilized_hit_at_10percent_FDR = case_when(
+      representative %in% 
+        filter(pci_hits_df, slopeH1 > 0)$representative ~ TRUE, 
+      TRUE ~ FALSE),
+    destabilized_hit_at_10percent_FDR = case_when(
+      representative %in% 
+        filter(pci_hits_df, slopeH1 < 0)$representative ~ TRUE, 
+      TRUE ~ FALSE))
+```
+
+Make sure we can still make the plot
+```{r}
+ggplot(pci_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+    geom_point(color = "gray", alpha = 0.5) +
+    geom_point(color = "steelblue", alpha = 0.5, 
+               data = filter(pci_out_tab, stabilized_hit_at_10percent_FDR)) +
+    geom_point(color = "orange", alpha = 0.5, 
+               data = filter(pci_out_tab, destabilized_hit_at_10percent_FDR)) +
+    coord_cartesian(xlim = c(-12.5, 7.5))
+```
+
+### BRD-3811
+
+```{r}
+brd_raw <- read_xlsx("../BRD-3811_HL60_cell_2DTPP/Supplementary_Data_2.xlsx", sheet = "BRD3811") %>% 
+  dplyr::select(representative,
+                clustername,
+                qupm,
+                qusm,
+                temperature,
+                matches("sumionarea"),
+                matches("rel_fc_protein"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+brd_fil <- resolveAmbiguousProteinNames(brd_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+brd_df <- recomputeSignalFromRatios(brd_fil)
+```
+
+Compute null and alternative model fits and extract parameters
+
+```{r eval=!reRun, echo=FALSE}
+brd_params_df <- readRDS("../pre_run_data/brd_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+brd_fstat_df <- computeFStatFromParams(brd_params_df)
+```
+
+Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+
+```{r eval=!reRun, echo=FALSE}
+brd_null_df <- readRDS("../pre_run_data/brd_null_df.rds")
+```
+
+```{r}
+brd_out_tab <- left_join(
+  brd_raw, brd_fdr_df %>% filter(dataset == "true") %>%
+    dplyr::select(representative, clustername, nObsRound,
+                  rssH0,  rssH1, F_statistic),
+  by = c("representative", "clustername")) %>% 
+  mutate(affected_by_carry_over = case_when(
+    clustername %in%
+      carry_over_cases_brd3811 ~ TRUE, TRUE ~ FALSE),
+    stabilized_hit_at_10percent_FDR = case_when(
+      representative %in% 
+        filter(hdac8ii_hits_df, slopeH1 > 0)$representative ~ TRUE, 
+      TRUE ~ FALSE),
+    destabilized_hit_at_10percent_FDR = case_when(
+      representative %in% 
+        filter(hdac8ii_hits_df, slopeH1 < 0)$representative ~ TRUE, 
+      TRUE ~ FALSE))
+```
+
+Make sure we can still make the plot
+```{r}
+ggplot(brd_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+    geom_point(color = "gray", alpha = 0.5) +
+    geom_point(color = "steelblue", alpha = 0.5, 
+               data = filter(brd_out_tab, stabilized_hit_at_10percent_FDR)) +
+    geom_point(color = "orange", alpha = 0.5, 
+               data = filter(brd_out_tab, destabilized_hit_at_10percent_FDR)) +
+    coord_cartesian(xlim = c(-12.5, 7.5))
+```
+
+
+### In vitro assay
+
+```{r}
+lap3_tab <- read_xlsx("LAP3_assay_simplified.xlsx") %>% 
+  dplyr::select(`Time [s]`, matches("DMSO"), matches("100uM")) %>% 
+  gather(key, value, -`Time [s]`) %>% 
+  mutate(condition = factor(case_when(grepl("DMSO", key) ~ "control",
+                                      grepl("BRD", key) ~ "100 uM BRD3811",
+                                      TRUE ~ "100 uM PCI-34051"),
+                            levels = c("control", "100 uM PCI-34051", "100 uM BRD3811"))) %>%
+  group_by(`Time [s]`) %>% 
+  mutate(replicate = factor(case_when(!duplicated(condition) ~ 1,
+                                      TRUE ~ 2))) %>% 
+  ungroup 
+
+ggplot(lap3_tab, aes(`Time [s]`, value, color = condition)) +
+  geom_point(aes(shape = replicate), size = 0.5) +
+  stat_summary(fun = base::mean, geom = "line", size = 0.5) +
+  ylab("Intensity") +
+  scale_color_manual(values = c("black", "darkblue", "firebrick"))
+```
+
+## Figure 5
+
+### GTP
+
+Annotate GTP and ATP binding proteins
+
+```{r}
+all_atp_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0005524", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_gtp_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0005525", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+```
+
+```{r}
+gtp_raw <- read_xlsx("../GTP_Jurkat_gelfil_lysate_2DTPP/Supplementary_Data_3.xlsx", sheet = "GTP") %>% 
+  dplyr::select(representative,
+                clustername,
+                qupm,
+                qusm,
+                experiment,
+                temperature,
+                matches("sumionarea"),
+                matches("rel_fc_protein"))  %>% 
+  gather(key, value, matches("sumionarea"), matches("rel_fc_protein")) %>% 
+  mutate(conc = as.numeric(gsub("uM", "", gsub(".+_protein_[0-9,H,L]+_[0-9,H,L]+_", "", key))),
+         temperature = as.numeric(gsub("C", "", temperature)),
+         key = case_when(grepl("sumionarea", key) ~ "raw_value",
+                         grepl("rel_fc", key) ~ "rel_value")) %>% 
+  spread(key, value) %>% 
+  arrange(representative, temperature, conc) %>% 
+  group_by(clustername, temperature, conc) %>% 
+  filter(qupm == max(qupm), 
+         qusm == max(qusm), 
+         raw_value == max(raw_value)) %>% 
+  filter(!duplicated(clustername)) %>% 
+  ungroup %>% 
+  mutate(log2_value = log2(raw_value),
+         log_conc = log10(conc/1e6)) %>% 
+  filter(qupm > 1)
+
+# resolve ambiguous protein names
+gtp_fil <- resolveAmbiguousProteinNames(gtp_raw)
+  
+# recompute reporter ion signal from robust Isobarquant fold changes
+gtp_df <- recomputeSignalFromRatios(gtp_fil)
+```
+
+
+```{r eval=!reRun, echo=FALSE}
+gtp_params_df <- readRDS("../pre_run_data/gtp_params_df.rds")
+```
+
+Compute *F* statistics
+```{r}
+gtp_fstat_df <- computeFStatFromParams(gtp_params_df)
+```
+
+Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+
+```{r eval=!reRun, echo=FALSE}
+gtp_null_df <- readRDS("../pre_run_data/gtp_null_df.rds")
+```
+
+Compute FDR and find hits:
+
+```{r}
+gtp_fdr_df <- getFDR(df_out = gtp_fstat_df,
+                     df_null = gtp_null_df,
+                     squeezeDenominator = TRUE)
+  
+gtp_hits_10per <- findHits(gtp_fdr_df, 0.1) 
+gtp_hits_1per <- findHits(gtp_fdr_df, 0.01)
+
+
+gtp_out_tab <- left_join(
+  gtp_raw,  gtp_fdr_df %>% filter(dataset == "true") %>% 
+    dplyr::select(representative, clustername, nObsRound,
+                  rssH0, rssH1, F_statistic),
+  by = c("representative", "clustername")) %>% 
+  mutate(stabilized_hit_at_1percent_FDR = 
+           case_when(representative %in% 
+                       filter(gtp_hits_1per, slopeH1 > 0)$representative ~ TRUE,
+                     TRUE ~ FALSE),
+         destabilized_hit_at_1percent_FDR = 
+           case_when(representative %in% 
+                       filter(gtp_hits_1per, slopeH1 < 0)$representative ~ TRUE,
+                     TRUE ~ FALSE),
+         stabilized_hit_at_10percent_FDR = 
+           case_when(representative %in% 
+                       filter(gtp_hits_10per, slopeH1 > 0)$representative ~ TRUE,
+                     TRUE ~ FALSE),
+         destabilized_hit_at_10percent_FDR = 
+           case_when(representative %in% 
+                       filter(gtp_hits_10per, slopeH1 < 0)$representative ~ TRUE,
+                     TRUE ~ FALSE),
+         GO_annotated_ATP_binder = case_when(
+           clustername %in% all_atp_binder$SYMBOL ~ TRUE, 
+           TRUE ~ FALSE),
+         GO_annotated_GTP_binder = case_when(
+           clustername %in% all_gtp_binder$SYMBOL ~ TRUE, 
+           TRUE ~ FALSE))
+```
+
+Make sure we can still make the plot
+```{r}
+ggplot(gtp_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+    geom_point(color = "gray", alpha = 0.5) +
+    geom_point(color = "black", alpha = 0.5, 
+               data = filter(gtp_out_tab, stabilized_hit_at_10percent_FDR |
+                               destabilized_hit_at_10percent_FDR)) +
+    geom_point(color = "darkgreen", alpha = 0.5, 
+               data = filter(gtp_out_tab, GO_annotated_ATP_binder &
+                               (stabilized_hit_at_10percent_FDR |
+                               destabilized_hit_at_10percent_FDR))) + 
+    geom_point(color = "violet", alpha = 0.5, 
+               data = filter(gtp_out_tab, GO_annotated_GTP_binder &
+                               (stabilized_hit_at_10percent_FDR |
+                               destabilized_hit_at_10percent_FDR))) +
+    coord_cartesian(xlim = c(-12.5, 7.5)) +
+    facet_wrap(~nObsRound)
+```
+
+```{r}
+gtp_threshold_df <- read_xlsx("../GTP_Jurkat_gelfil_lysate_2DTPP/Supplementary_Data_3.xlsx", sheet = "GTP") %>% 
+  dplyr::select(clustername, stabilized_hits_found_by_threshold) %>% 
+  filter(stabilized_hits_found_by_threshold)
+
+gtp_hits_10per <- findHits(gtp_fdr_df, 0.10) %>% 
+  filter(detected_effectH1 == "stability", slopeH1 > 0)
+gtp_hits_1per <- findHits(gtp_fdr_df, 0.01) %>% 
+  filter(detected_effectH1 == "stability", slopeH1 > 0)
+
+
+set_intersect_df <- data.frame(
+  gene_name = filter(gtp_fdr_df, !duplicated(clustername))$clustername) %>% 
+  mutate(`ATP binders` = as.numeric(gene_name %in% all_atp_binder$SYMBOL),
+         `GTP binders` = as.numeric(gene_name %in% all_gtp_binder$SYMBOL),
+         `DLPTP hits at 10% FDR` = 
+           as.numeric(gene_name %in% gtp_hits_10per$clustername),
+         `DLPTP hits at 1% FDR` = 
+           as.numeric(gene_name %in% gtp_hits_1per$clustername),
+         `Hits found by threshold-based approach` = 
+           as.numeric(gene_name %in% gtp_threshold_df$clustername))
+
+UpSetR::upset(set_intersect_df, nsets = 5)
+```
 
 # Supplementary figures
+
+## Figure S1
+
+```{r}
+brd4_jq1_df <- filter(jq1_lys_df, clustername == "BRD4") %>% 
+  dplyr::select(gene_name = clustername, qupm, qusm, 
+                temperature, conc, log_conc, log2_value,
+                rel_value)
+```
+
+
+## Figure S2
+
+### a == Table for Figure 3a
+
+### b == Table for Figure 3b
+
+### Panobinostat Venn Diagramms
+
+### JQ1 Venn Diagramms
+
+## Figure S3
+
+```{r}
+examples_pano_df <- filter(pano_cell_df, clustername %in%
+                             c("FADS1", "HDAC1", "ZNF384",
+                               "DHRS1", "HDAC6")) %>% 
+  dplyr::select(gene_name = clustername, qupm, qusm, 
+                temperature, conc, log_conc, log2_value, 
+                rel_value)
+```
+
+## Figure S4
+
+### a == Table for Figure 4a
+
+### b == Table for Figure 4b
+
+### c
+
+```{r}
+csk_pci_df <- filter(pci_df, clustername == "CSK") %>% 
+  dplyr::select(gene_name = clustername, qupm, qusm, 
+                temperature, conc, log_conc, log2_value,
+                rel_value)
+```
+
+
+# Make final list
+```{r}
+out_list <- c(
+  "Figure2a" = all_alpha_fdr_df,
+  "Figure2b" = b100_pr_df,
+  "Figure3a/FigureS2a" = pano_out_tab,
+  "Figure3b/FigureS2b" = jq1_out_tab,
+  "Figure4b/FigureS4a" = pci_out_tab,
+  "Figure4d/FigureS4b" = brd_out_tab,
+  "Figure4e" = lap3_tab,
+  "Figure5a" = gtp_out_tab,
+  "Figure5b" = set_intersect_df,
+  "FigureS1" = brd4_jq1_df,
+  # "FigureS2a" = pano_out_tab,
+  # "FigureS2b" = jq1_out_tab,
+  "FigureS2c" = pano_venn_df,
+  "FigureS2d" = jq1_venn_df,
+  "FigureS3a-e" = examples_pano_df,
+  "FigureS4c" = csk_pci_df
+)
+```
+
+Write excel table
+```{r}
+write.xlsx(out_list, col.names=TRUE, row.names=TRUE, asTable = TRUE, 
+           file = "Kurzawa_et_al_source_data.xlsx")
+
+```
+
