@@ -146,8 +146,8 @@ Remove carry-over cases:
 ```{r}
 ## manually identified carry-over cases
 carry_over_cases <- 
-c("ALDH1B1", "BTK", "CAMK2G", "CSK", "CSNK2A1", "CSNK2A2", "GAK",
-  "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
+c("ALDH1B1", "BTK", "CAMK2G", "CAMK2D", "CSK", "CSNK2A1", "CSNK2A2", 
+  "GAK", "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
   "NQO1", "PDXK", "PRKAA1", "PRKAG1", "RPS6KA1", "ULK3",
   "CDK2", "CDK5")
 
