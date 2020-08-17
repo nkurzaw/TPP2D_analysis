@@ -120,7 +120,7 @@ saveRDS(jq1_params_df, file = "../pre_run_data/jq1_params_df.rds")
 jq1_params_df <- readRDS("../pre_run_data/jq1_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 jq1_fstat_df <- computeFStatFromParams(jq1_params_df)
 ```
@@ -155,7 +155,7 @@ ggplot(jq1_fdr_df %>%
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
                                     slopeH1 < 0 ~ "destabilized protein")), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 1) + 
   geom_point(aes(color = group), alpha = 0.5, 
              size = 1,
@@ -168,11 +168,11 @@ ggplot(jq1_fdr_df %>%
     data = jq1_hits_df, 
     size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
   scale_color_manual("", values = c("steelblue", "orange")) +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("JQ1 lysate experiment") +
-  coord_cartesian(xlim = c(-12.5, 7.5), 
-                  ylim = c(0, 6)) +
+  coord_cartesian(xlim = c(-5, 5), 
+                  ylim = c(0, 6.5)) +
   theme_paper +
   theme(legend.position = "bottom")
 ```
@@ -183,7 +183,7 @@ ggplot(jq1_fdr_df %>%
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
                                     slopeH1 < 0 ~ "destabilized protein")), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 1) + 
   geom_point(aes(color = group), alpha = 0.5, 
              size = 1,
@@ -197,10 +197,10 @@ ggplot(jq1_fdr_df %>%
     size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
   scale_color_manual("", values = c("steelblue", "orange")) +
   facet_wrap(~nObsRound, scales = "free", ncol = 5) +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("JQ1 lysate experiment") +
-  coord_cartesian(xlim = c(-12.5, 7.5)) +
+  coord_cartesian(xlim = c(-5, 5), ylim = c(0, 6.5)) +
   theme_paper +
   theme(legend.position = "bottom")
 

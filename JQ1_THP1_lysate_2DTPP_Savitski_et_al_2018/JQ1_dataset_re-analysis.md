@@ -1,6 +1,6 @@
 Re-analysis of JQ1 lysate dataset by Savitski et al, 2018
 ================
-25 June, 2020
+17 August, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -126,7 +126,7 @@ jq1_params_df <- getModelParamsDf(jq1_lys_df, maxit = 500)
 saveRDS(jq1_params_df, file = "../pre_run_data/jq1_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 
 ``` r
 jq1_fstat_df <- computeFStatFromParams(jq1_params_df)
@@ -161,7 +161,7 @@ ggplot(jq1_fdr_df %>%
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
                                     slopeH1 < 0 ~ "destabilized protein")), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 1) + 
   geom_point(aes(color = group), alpha = 0.5, 
              size = 1,
@@ -174,11 +174,11 @@ ggplot(jq1_fdr_df %>%
     data = jq1_hits_df, 
     size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
   scale_color_manual("", values = c("steelblue", "orange")) +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("JQ1 lysate experiment") +
-  coord_cartesian(xlim = c(-12.5, 7.5), 
-                  ylim = c(0, 6)) +
+  coord_cartesian(xlim = c(-5, 5), 
+                  ylim = c(0, 6.5)) +
   theme_paper +
   theme(legend.position = "bottom")
 ```
@@ -190,7 +190,7 @@ ggplot(jq1_fdr_df %>%
            filter(dataset == "true") %>% 
            mutate(group = case_when(slopeH1 > 0 ~ "stabilized protein",
                                     slopeH1 < 0 ~ "destabilized protein")), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 1) + 
   geom_point(aes(color = group), alpha = 0.5, 
              size = 1,
@@ -204,10 +204,10 @@ ggplot(jq1_fdr_df %>%
     size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
   scale_color_manual("", values = c("steelblue", "orange")) +
   facet_wrap(~nObsRound, scales = "free", ncol = 5) +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("JQ1 lysate experiment") +
-  coord_cartesian(xlim = c(-12.5, 7.5)) +
+  coord_cartesian(xlim = c(-5, 5), ylim = c(0, 6.5)) +
   theme_paper +
   theme(legend.position = "bottom")
 ```
@@ -296,7 +296,7 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.1 tidyr_1.1.0   TPP2D_1.5.5  
+    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.2 tidyr_1.1.0   TPP2D_1.5.7  
     ## [6] dplyr_1.0.0  
     ## 
     ## loaded via a namespace (and not attached):
