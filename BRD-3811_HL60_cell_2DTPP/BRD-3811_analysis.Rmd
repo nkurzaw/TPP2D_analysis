@@ -164,7 +164,7 @@ brd_hits_df <- findHits(brd_fdr_df, alpha = 0.1)
 ```{r}
 ggplot(brd_fdr_df %>% 
          filter(dataset == "true"), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 1) + 
   geom_point(aes(color = group), alpha = 0.5, 
              size = 1,
@@ -178,10 +178,9 @@ ggplot(brd_fdr_df %>%
                     c("HDAC8", "LAP3")),
     size = 2, segment.size = 0.2, min.segment.length = unit(1, "pt")) +
   scale_color_manual("", values = c("orange", "steelblue")) +
-  coord_cartesian(xlim = c(-12.5, 7.5)) + 
   ylab("asinh(F statistic)") +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("BRD-34051 in-cell experiment") +
   theme_paper +
   theme(legend.position = "bottom")
@@ -189,27 +188,42 @@ ggplot(brd_fdr_df %>%
 ```
 
 ```{r}
+all_oxred_process <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0055114", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_carbred_process <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0019752", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+```
+
+```{r}
 ggplot(brd_fdr_df %>% 
          filter(dataset == "true"), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
-  geom_point(color = "gray", alpha = 0.5, size = 1) + 
-  geom_point(aes(color = group), alpha = 0.5, 
-             size = 1,
-             data = brd_hits_df %>% 
-                 mutate(group = case_when(
-                     slopeH1 > 0 ~ "stabilized protein",
-                     slopeH1 < 0 ~ "destabilized protein"))) + 
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
+  geom_point(color = "gray", alpha = 0.5) + 
+  geom_point(aes(color = case_when(
+    clustername %in% all_oxred_process$SYMBOL |
+    clustername %in% all_carbred_process$SYMBOL ~ 
+      "oxidation-reduction process or\ncarboxylic acid metabolic process",
+    TRUE ~ "other")), 
+             alpha = 0.5, 
+             data = brd_hits_df) + 
   ggrepel::geom_text_repel(
     aes(label = clustername),
     data = filter(brd_hits_df, clustername %in% 
                     c("HDAC8", "LAP3")),
-    size = 2, segment.size = 0.2, min.segment.length = unit(1, "pt")) +
-  scale_color_manual("", values = c("orange", "steelblue")) +
-  coord_cartesian(xlim = c(-12.5, 7.5)) + 
+    size = 2, segment.size = 0.2, min.segment.length = unit(2, "pt")) +
+  scale_color_manual("GO annotation", values = c("black", "darkturquoise")) +
+  coord_cartesian(xlim = c(-4, 4), ylim = c(0, 6)) + 
   facet_wrap(~ nObsRound) +
   ylab("asinh(F statistic)") +
-  labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
   ggtitle("BRD-34051 in-cell experiment") +
   theme_paper +
   theme(legend.position = "bottom")
