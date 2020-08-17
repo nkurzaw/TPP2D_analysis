@@ -103,17 +103,17 @@ pr_b100_3_byMsExp_mod <- computePrecisionRecall(
 
 all_alpha_fdr_df <- bind_rows(
   pr_b100_1_byMsExp %>% 
-     mutate(variant = "DLPTP standard, B = 100"), 
+     mutate(variant = "DLPTP standard, seed 1"), 
    pr_b100_2_byMsExp %>% 
-     mutate(variant = "DLPTP standard, B = 100"), 
+     mutate(variant = "DLPTP standard, seed 2"), 
    pr_b100_3_byMsExp %>% 
-     mutate(variant = "DLPTP standard, B = 100"), 
+     mutate(variant = "DLPTP standard, seed 3"), 
   pr_b100_1_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100"),
+     mutate(variant = "DLPTP moderated, seed 1"),
    pr_b100_2_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100"),
+     mutate(variant = "DLPTP moderated, seed 2"),
    pr_b100_3_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100")) %>% 
+     mutate(variant = "DLPTP moderated, seed 3")) %>% 
   group_by(variant, alpha) %>% 
   summarize(mean_fdr = mean(1-precision),
             mean_tpr = mean(recall)) %>% 
@@ -182,7 +182,7 @@ ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr,
              data = filter(filter(b100_pr_df, alpha == "0.01"))) +
   geom_point(shape = 6, size = 3,
              data = filter(filter(b100_pr_df, 
-                                  variant == "Threshold-based\napproach"))) +
+                                  variant == "Threshold-based approach"))) +
   scale_color_manual("variant", 
                      values = c("deepskyblue4", "darkorchid4", "darkorange1")) +
   labs(x = "FDR", y = "TPR") +
