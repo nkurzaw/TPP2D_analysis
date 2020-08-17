@@ -34,6 +34,7 @@ library(openxlsx)
 sim_tp_df <- readRDS("../pre_run_data/sim_tp_df.rds")
 sim_params_df <- readRDS("../pre_run_data/sim_params_df.rds")
 sim_fstat_df <- computeFStatFromParams(sim_params_df)
+sim_s1_null_df <- readRDS("../pre_run_data/sim_s1_null_df.rds")
 sim_s2_null_df <- readRDS("../pre_run_data/sim_s2_null_df.rds")
 sim_s3_null_df <- readRDS("../pre_run_data/sim_s3_null_df.rds")
 thres_found_recurrently <- readRDS("../pre_run_data/thres_found_recurrently.rds")
@@ -63,6 +64,9 @@ computePrecisionRecall <- function(fdr_df,
 
 Get FDR estimates for different numbers of bootstraps
 ```{r}
+sim_fdr_df_s1_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s1_null_df,
+                                     squeezeDenominator = FALSE)
 sim_fdr_df_s2_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df,
                                      squeezeDenominator = FALSE)
@@ -70,114 +74,49 @@ sim_fdr_df_s3_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s3_null_df,
                                      squeezeDenominator = FALSE)
 
+sim_fdr_df_s1_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s1_null_df,
+                                     squeezeDenominator = TRUE)
 sim_fdr_df_s2_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df,
                                      squeezeDenominator = TRUE)
 sim_fdr_df_s3_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s3_null_df,
                                      squeezeDenominator = TRUE)
-
-sim_fdr_df_s2_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = FALSE)
-sim_fdr_df_s3_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = FALSE)
-
-sim_fdr_df_s2_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = TRUE)
-sim_fdr_df_s3_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = TRUE)
-
-sim_fdr_df_s2_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = FALSE)
-sim_fdr_df_s3_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = FALSE)
-
-sim_fdr_df_s2_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = TRUE)
-sim_fdr_df_s3_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = TRUE)
 ```
 
 Compute precision and recall for each of the FDR estimates based on the different number of bootstraps
 ```{r}
+pr_b100_1_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s1_b100_byMsExp, ntp = 80)
 pr_b100_2_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp, ntp = 80)
 pr_b100_3_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b100_byMsExp, ntp = 80)
 
+pr_b100_1_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s1_b100_byMsExp_mod, ntp = 80)
 pr_b100_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp_mod, ntp = 80)
 pr_b100_3_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b100_byMsExp_mod, ntp = 80)
 
-
-pr_b20_2_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b20_byMsExp, ntp = 80)
-pr_b20_3_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b20_byMsExp, ntp = 80)
-
-pr_b20_2_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b20_byMsExp_mod, ntp = 80)
-pr_b20_3_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b20_byMsExp_mod, ntp = 80)
-
-
-pr_b5_2_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b5_byMsExp, ntp = 80)
-pr_b5_3_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b5_byMsExp, ntp = 80)
-
-pr_b5_2_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b5_byMsExp_mod, ntp = 80)
-pr_b5_3_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b5_byMsExp_mod, ntp = 80)
-
 all_alpha_fdr_df <- bind_rows(
+  pr_b100_1_byMsExp %>% 
+     mutate(variant = "DLPTP standard, B = 100"), 
    pr_b100_2_byMsExp %>% 
      mutate(variant = "DLPTP standard, B = 100"), 
    pr_b100_3_byMsExp %>% 
      mutate(variant = "DLPTP standard, B = 100"), 
+  pr_b100_1_byMsExp_mod %>% 
+     mutate(variant = "DLPTP moderated, B = 100"),
    pr_b100_2_byMsExp_mod %>% 
      mutate(variant = "DLPTP moderated, B = 100"),
    pr_b100_3_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100"),
-   pr_b20_2_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 20"),
-   pr_b20_3_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 20"),
-   pr_b20_2_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 20"),
-   pr_b20_3_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 20"),
-   pr_b5_2_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 5"),
-   pr_b5_3_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 5"),
-   pr_b5_2_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 5"),
-   pr_b5_3_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 5")) %>% 
+     mutate(variant = "DLPTP moderated, B = 100")) %>% 
   group_by(variant, alpha) %>% 
   summarize(mean_fdr = mean(1-precision),
-            mean_tpr = mean(recall),
-            sd_fdr = sd(1-precision),
-            sd_tpr = sd(recall)) %>% 
+            mean_tpr = mean(recall)) %>% 
   ungroup
 
 
@@ -197,7 +136,7 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
                "darkorchid4",
                "darkorchid3",
                "darkorchid1")) +
-  labs(x = expression(alpha*" level cutoff"),
+  labs(x = "nominal FDR",
        y = "observed FDR") +
   theme_classic()
 
@@ -206,14 +145,18 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
 
 ```{r}
 b100_pr_df <- bind_rows(
+  pr_b100_1_byMsExp %>% 
+    mutate(variant = "DLPTP standard"), 
   pr_b100_2_byMsExp %>% 
-    mutate(variant = "DLPTP standard, B = 100"), 
+    mutate(variant = "DLPTP standard"),
   pr_b100_3_byMsExp %>% 
-    mutate(variant = "DLPTP standard, B = 100"),
+    mutate(variant = "DLPTP standard"), 
+  pr_b100_1_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated"),
    pr_b100_2_byMsExp_mod %>% 
-    mutate(variant = "DLPTP moderated, B = 100"),
+    mutate(variant = "DLPTP moderated"),
   pr_b100_3_byMsExp_mod %>% 
-    mutate(variant = "DLPTP moderated, B = 100"),
+    mutate(variant = "DLPTP moderated"),
   tibble(
     precision = length(thres_found_recurrently[
       !grepl("protein",thres_found_recurrently)])/
@@ -224,9 +167,7 @@ b100_pr_df <- bind_rows(
     variant = "Threshold-based approach")) %>% 
   group_by(variant, alpha) %>% 
   summarize(mean_fdr = mean(1-precision),
-            mean_tpr = mean(recall),
-            sd_fdr = sd(1-precision),
-            sd_tpr = sd(recall)) %>% 
+            mean_tpr = mean(recall)) %>% 
   ungroup 
   
 
@@ -326,15 +267,16 @@ pano_hits_df <- findHits(pano_fdr_df, alpha = 0.1)
 Make output table
 ```{r}
 pano_out_tab <- pano_fdr_df %>% filter(dataset == "true") %>% 
-    dplyr::select(representative, clustername, nObsRound, 
+    dplyr::select(protein_id = representative, 
+                  gene_name = clustername, nObsRound, 
                   rssH0,  rssH1, F_statistic) %>% 
     mutate(stabilized_hit_at_10percent_FDR = 
                case_when(
-                   representative %in% 
+                   protein_id %in% 
                        filter(pano_hits_df, slopeH1 > 0)$representative ~ 
                        TRUE, TRUE ~ FALSE),
            destabilized_hit_at_10percent_FDR = 
-               case_when(representative %in% 
+               case_when(protein_id %in% 
                              filter(pano_hits_df, slopeH1 < 0)$representative ~
                              TRUE, TRUE ~ FALSE)) 
 ```
@@ -452,19 +394,18 @@ jq1_hits_df <- findHits(jq1_fdr_df, alpha = 0.1)
 Make output table
 
 ```{r}
-jq1_out_tab <- left_join(
-    jq1_lys_raw,  
+jq1_out_tab <-  
     jq1_fdr_df %>% 
         filter(dataset == "true") %>% 
-        dplyr::select(representative, clustername, nObsRound, 
-                      rssH0,  rssH1, F_statistic),
-    by = c("representative", "clustername")) %>% 
+        dplyr::select(protein_id = representative, 
+                      gene_name = clustername, nObsRound, 
+                      rssH0,  rssH1, F_statistic) %>% 
     mutate(stabilized_hit_at_10percent_FDR = 
-               case_when(representative %in% 
+               case_when(protein_id %in% 
                              filter(jq1_hits_df, slopeH1 > 0)$representative ~
                              TRUE, TRUE ~ FALSE),
            destabilized_hit_at_10percent_FDR = 
-               case_when(representative %in% 
+               case_when(protein_id %in% 
                              filter(jq1_hits_df, slopeH1 < 0)$representative ~
                              TRUE, TRUE ~ FALSE))
 ```
@@ -575,20 +516,19 @@ pci_fdr_df <- getFDR(df_out = pci_fstat_df,
 pci_hits_df <- findHits(pci_fdr_df, alpha = 0.1)
 
 
-pci_out_tab <- left_join(
-  pci_raw, pci_fdr_df %>% 
+pci_out_tab <- pci_fdr_df %>% 
     filter(dataset == "true") %>% 
-    dplyr::select(representative, clustername, 
-                  nObsRound, rssH0,  rssH1, F_statistic),
-  by = c("representative", "clustername")) %>% 
+    dplyr::select(protein_id = representative, 
+                  gene_name = clustername, 
+                  nObsRound, rssH0,  rssH1, F_statistic) %>% 
   mutate(affected_by_carry_over = case_when(
-    clustername %in% carry_over_cases ~ TRUE, TRUE ~ FALSE),
+    gene_name %in% carry_over_cases ~ TRUE, TRUE ~ FALSE),
     stabilized_hit_at_10percent_FDR = case_when(
-      representative %in% 
+      protein_id %in% 
         filter(pci_hits_df, slopeH1 > 0)$representative ~ TRUE, 
       TRUE ~ FALSE),
     destabilized_hit_at_10percent_FDR = case_when(
-      representative %in% 
+      protein_id %in% 
         filter(pci_hits_df, slopeH1 < 0)$representative ~ TRUE, 
       TRUE ~ FALSE))
 ```
@@ -671,20 +611,19 @@ brd_hits_df <- findHits(brd_fdr_df, alpha = 0.1)
 
 
 ```{r}
-brd_out_tab <- left_join(
-  brd_raw, brd_fdr_df %>% filter(dataset == "true") %>%
-    dplyr::select(representative, clustername, nObsRound,
-                  rssH0,  rssH1, F_statistic),
-  by = c("representative", "clustername")) %>% 
+brd_out_tab <- brd_fdr_df %>% filter(dataset == "true") %>%
+    dplyr::select(protein_id = representative, 
+                  gene_name = clustername, nObsRound,
+                  rssH0,  rssH1, F_statistic) %>% 
   mutate(affected_by_carry_over = case_when(
-    clustername %in%
+    gene_name %in%
       carry_over_cases_brd3811 ~ TRUE, TRUE ~ FALSE),
     stabilized_hit_at_10percent_FDR = case_when(
-      representative %in% 
+      protein_id %in% 
         filter(brd_hits_df, slopeH1 > 0)$representative ~ TRUE, 
       TRUE ~ FALSE),
     destabilized_hit_at_10percent_FDR = case_when(
-      representative %in% 
+      protein_id %in% 
         filter(brd_hits_df, slopeH1 < 0)$representative ~ TRUE, 
       TRUE ~ FALSE))
 ```
@@ -804,32 +743,31 @@ gtp_hits_10per <- findHits(gtp_fdr_df, 0.1)
 gtp_hits_1per <- findHits(gtp_fdr_df, 0.01)
 
 
-gtp_out_tab <- left_join(
-  gtp_raw,  gtp_fdr_df %>% filter(dataset == "true") %>% 
-    dplyr::select(representative, clustername, nObsRound,
-                  rssH0, rssH1, F_statistic),
-  by = c("representative", "clustername")) %>% 
+gtp_out_tab <- gtp_fdr_df %>% filter(dataset == "true") %>% 
+    dplyr::select(protein_id = representative, 
+                  gene_name = clustername, nObsRound,
+                  rssH0, rssH1, F_statistic)%>% 
   mutate(stabilized_hit_at_1percent_FDR = 
-           case_when(representative %in% 
+           case_when(protein_id %in% 
                        filter(gtp_hits_1per, slopeH1 > 0)$representative ~ TRUE,
                      TRUE ~ FALSE),
          destabilized_hit_at_1percent_FDR = 
-           case_when(representative %in% 
-                       filter(gtp_hits_1per, slopeH1 < 0)$representative ~ TRUE,
+           case_when(gene_name %in% 
+                       filter(gtp_hits_1per, slopeH1 < 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
          stabilized_hit_at_10percent_FDR = 
-           case_when(representative %in% 
-                       filter(gtp_hits_10per, slopeH1 > 0)$representative ~ TRUE,
+           case_when(gene_name %in% 
+                       filter(gtp_hits_10per, slopeH1 > 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
          destabilized_hit_at_10percent_FDR = 
-           case_when(representative %in% 
-                       filter(gtp_hits_10per, slopeH1 < 0)$representative ~ TRUE,
+           case_when(gene_name %in% 
+                       filter(gtp_hits_10per, slopeH1 < 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
          GO_annotated_ATP_binder = case_when(
-           clustername %in% all_atp_binder$SYMBOL ~ TRUE, 
+           gene_name %in% all_atp_binder$SYMBOL ~ TRUE, 
            TRUE ~ FALSE),
          GO_annotated_GTP_binder = case_when(
-           clustername %in% all_gtp_binder$SYMBOL ~ TRUE, 
+           gene_name %in% all_gtp_binder$SYMBOL ~ TRUE, 
            TRUE ~ FALSE))
 ```
 
