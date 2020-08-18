@@ -31,11 +31,10 @@ Load required libraries
 
 ```{r}
 library(TPP2D)
-library(dplyr)
-library(tidyr)
+library(tidyverse)
 library(ggplot2)
 library(readxl)
-library(UpSetR)
+library(ggupset)
 ```
 
 Define plot style
@@ -57,7 +56,7 @@ theme_paper <- theme_bw(base_size = 6) +
         axis.text = element_text(size = 6))
 ```
 
-Annotate GTP and ATP binding proteins
+Annotate proteins groups
 
 ```{r}
 all_atp_binder <- AnnotationDbi::select(
@@ -71,18 +70,49 @@ all_gtp_binder <- AnnotationDbi::select(
   keys = "GO:0005525", 
   columns = c("SYMBOL", "IPI"), 
   keytype = "GOALL")
+
+all_gtpase_activity <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0003924", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_nucleotide_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0000166", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_nucleic_acid_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0003676", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_enzyme_regulator <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0030234", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_oxidoreductases <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0016491", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
 ```
 
 
 Download the supplementary table from the journal's website
 
 ```{r}
-if(!file.exists("Supplementary_Data_3.xlsx")){
-  download.file(
-    url = "https://www.biorxiv.org/content/biorxiv/early/2020/05/09/2020.05.08.083709/DC2/embed/media-3.xlsx?download=true",
-    destfile = "Supplementary_Data_3.xlsx",
-    mode = "wb")
-}
+# if(!file.exists("Supplementary_Data_3.xlsx")){
+#   download.file(
+#     url = "https://www.biorxiv.org/content/biorxiv/early/2020/05/09/2020.05.08.083709/DC2/embed/media-3.xlsx?download=true",
+#     destfile = "Supplementary_Data_3.xlsx",
+#     mode = "wb")
+# }
+# needs to be replaced with new table from Journal
 ```
 
 
@@ -132,7 +162,7 @@ saveRDS(gtp_params_df, file = "../pre_run_data/gtp_params_df.rds")
 gtp_params_df <- readRDS("../pre_run_data/gtp_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 gtp_fstat_df <- computeFStatFromParams(gtp_params_df)
 ```
@@ -145,7 +175,7 @@ gtp_null_df <- bootstrapNullAlternativeModel(
   maxit = 500, B = 100,
   BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
   verbose = FALSE)
-saveRDS(jq1_null_df, file = "../pre_run_data/jq1_null_df.rds")
+saveRDS(gtp_null_df, file = "../pre_run_data/gtp_null_df.rds")
 ```
 
 ```{r eval=!reRun, echo=FALSE}
@@ -157,7 +187,8 @@ Compute FDR and find hits:
 ```{r}
 gtp_fdr_df <- getFDR(df_out = gtp_fstat_df,
                      df_null = gtp_null_df,
-                     squeezeDenominator = TRUE)
+                     squeezeDenominator = TRUE) %>% 
+  mutate(clustername = gsub("^SEPT", "SEPTIN", clustername))
   
 gtp_hits_df <- findHits(gtp_fdr_df, alpha = 0.1)
 ```
@@ -165,27 +196,70 @@ gtp_hits_df <- findHits(gtp_fdr_df, alpha = 0.1)
 ```{r}
 ggplot(gtp_fdr_df %>% 
          filter(dataset == "true"), 
-       aes(log2(rssH0 - rssH1), asinh(F_statistic))) +
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
   geom_point(color = "gray", alpha = 0.5, size = 0.5) + 
-  geom_point(color = "black", alpha = 0.5, 
+  geom_point(aes(color = group), 
+             alpha = 0.25, 
              size = 0.5,
              data = gtp_hits_df %>% 
-              filter(!clustername %in% 
-                       all_atp_binder$SYMBOL,
-                     !clustername %in% 
-                       all_gtp_binder$SYMBOL)) + 
-  geom_point(color = "darkgreen", alpha = 0.5, 
+               mutate(group = case_when(
+                 clustername %in% all_gtp_binder$SYMBOL ~ "GTP binding",
+                 clustername %in% all_atp_binder$SYMBOL ~ "ATP binding",
+                 TRUE ~ "other"))) +
+  geom_point(color = "darkgreen", 
+             alpha = 0.25,
              size = 0.5,
-             data = filter(gtp_hits_df, clustername %in% 
-                             all_atp_binder$SYMBOL)) + 
-  geom_point(color = "violet", alpha = 0.5, 
+             data = filter(gtp_hits_df, clustername %in%
+                             all_atp_binder$SYMBOL)) +
+  geom_point(color = "violet", 
+             alpha = 0.25,
              size = 0.5,
-             data = filter(gtp_hits_df, clustername %in% 
+             data = filter(gtp_hits_df, clustername %in%
                              all_gtp_binder$SYMBOL)) +
+  scale_color_manual("GO annotation", values = c(
+    "GTP binding" = "violet",
+    "ATP binding" = "darkgreen",
+    "other" = "black"
+  )) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
+  coord_cartesian(xlim = c(-5, 10), ylim = c(0, 7)) +
+  ggtitle("GTP gelfil. lysate experiment") +
+  theme_paper
+```
+
+```{r}
+ggplot(gtp_fdr_df %>% 
+         filter(dataset == "true"), 
+       aes(sign(slopeH1)*sqrt(rssH0 - rssH1), log2(F_statistic + 1))) +
+  geom_point(color = "gray", alpha = 0.5, size = 0.5) + 
+  geom_point(aes(color = group), 
+             alpha = 0.25, 
+             size = 0.5,
+             data = gtp_hits_df %>% 
+               mutate(group = case_when(
+                 clustername %in% all_gtp_binder$SYMBOL ~ "GTP binding",
+                 clustername %in% all_atp_binder$SYMBOL ~ "ATP binding",
+                 TRUE ~ "other"))) +
+  geom_point(color = "darkgreen", 
+             alpha = 0.25,
+             size = 0.5,
+             data = filter(gtp_hits_df, clustername %in%
+                             all_atp_binder$SYMBOL)) +
+  geom_point(color = "violet", 
+             alpha = 0.25,
+             size = 0.5,
+             data = filter(gtp_hits_df, clustername %in%
+                             all_gtp_binder$SYMBOL)) +
+  scale_color_manual("GO annotation", values = c(
+    "GTP binding" = "violet",
+    "ATP binding" = "darkgreen",
+    "other" = "black"
+  )) +
   facet_wrap(~nObsRound, scales = "free", ncol = 5) +
-   labs(x = expression('log'[2]~'(RSS'^0~' - RSS'^1~')'),
-       y = expression('asinh('*italic(F)*' statistic)')) +
-  coord_cartesian(xlim = c(-12.5, 7.5), ylim = c(0, 6)) +
+  labs(x = bquote(sign(kappa) %.% sqrt(~'RSS'^0~' - RSS'^1~'')),
+       y = expression('log'[2]~'('*italic(F)*'-statistic + 1)')) +
+  coord_cartesian(xlim = c(-5, 10), ylim = c(0, 7)) +
   ggtitle("GTP gelfil. lysate experiment") +
   theme_paper
 ```
@@ -195,27 +269,123 @@ ggplot(gtp_fdr_df %>%
 ```{r}
 gtp_threshold_df <- read_xlsx("Supplementary_Data_3.xlsx", sheet = "GTP") %>% 
   dplyr::select(clustername, stabilized_hits_found_by_threshold) %>% 
-  filter(stabilized_hits_found_by_threshold)
+  filter(stabilized_hits_found_by_threshold) %>% 
+  mutate(clustername = gsub("^SEPT", "SEPTIN", clustername)) 
 
-gtp_hits_10per <- findHits(gtp_fdr_df, 0.10) %>% 
+gtp_hits_10per <- gtp_hits_df %>% 
   filter(detected_effectH1 == "stability", slopeH1 > 0)
-gtp_hits_1per <- findHits(gtp_fdr_df, 0.01) %>% 
-  filter(detected_effectH1 == "stability", slopeH1 > 0)
 
-
+atp_binder_in_dataset <- unique(intersect(all_atp_binder$SYMBOL,
+                                          gtp_fdr_df$clustername))
+gtp_binder_in_dataset <- unique(intersect(all_gtp_binder$SYMBOL,
+                                          gtp_fdr_df$clustername))
+nucleotide_binder_in_dataset <- unique(intersect(all_nucleotide_binder$SYMBOL,
+                                                 gtp_fdr_df$clustername))
+nucleic_acid_binder_in_dataset <- unique(intersect(all_nucleic_acid_binder$SYMBOL,
+                                                   gtp_fdr_df$clustername))
+reg_subunit_in_dataset <- unique(intersect(all_enzyme_regulator$SYMBOL,
+                                           gtp_fdr_df$clustername))
 set_intersect_df <- data.frame(
   gene_name = filter(gtp_fdr_df, !duplicated(clustername))$clustername) %>% 
-  mutate(`ATP binders` = as.numeric(gene_name %in% all_atp_binder$SYMBOL),
-         `GTP binders` = as.numeric(gene_name %in% all_gtp_binder$SYMBOL),
-         `DLPTP hits at 10% FDR` = 
-           as.numeric(gene_name %in% gtp_hits_10per$clustername),
-         `DLPTP hits at 1% FDR` = 
-           as.numeric(gene_name %in% gtp_hits_1per$clustername),
-         `Hits found by threshold-based approach` = 
-           as.numeric(gene_name %in% gtp_threshold_df$clustername))
+  mutate(
+    `Nucleotide binders` = as.numeric(
+      gene_name %in% nucleotide_binder_in_dataset),
+    `DLPTP hits at 10% FDR` = as.numeric(
+      gene_name %in% gtp_hits_10per$clustername),
+    `Threshold-based hits` = as.numeric(
+      gene_name %in% gtp_threshold_df$clustername))
 
-upset(set_intersect_df, nsets = 5)
+
+fill_colors <- c("ATP binding" = "darkgreen",
+                 "GTP binding" = "violet",
+                 "Nucleic acid binding" = "goldenrod",
+                 "regulatory subunit" = "darkturquoise",
+                 "oxidoreductase activity" = "brown",
+                 "other" = "gray")
+
+tidy_set_df <- set_intersect_df %>% 
+  as_tibble() %>% 
+  gather(key, value, -gene_name) %>% 
+  filter(value == 1) %>% 
+  dplyr::select(-value) %>% 
+  group_by(gene_name) %>%
+  summarise(set = list(key)) %>% 
+  ungroup() %>% 
+  mutate(set_collapsed = factor(
+    sapply(set, function(x) paste0(sort(x), collapse="_")),
+    levels = c("Nucleotide binders", "DLPTP hits at 10% FDR",
+               "Threshold-based hits",
+               "DLPTP hits at 10% FDR_Nucleotide binders",
+               "Nucleotide binders_Threshold-based hits",
+               "DLPTP hits at 10% FDR_Threshold-based hits",
+               "DLPTP hits at 10% FDR_Nucleotide binders_Threshold-based hits"))) %>% 
+  mutate(detail_set = case_when(
+    gene_name %in% gtp_binder_in_dataset | gene_name %in% all_gtpase_activity$SYMBOL ~ "GTP binding",
+    gene_name %in% atp_binder_in_dataset ~ "ATP binding",
+    gene_name %in% nucleic_acid_binder_in_dataset ~ "Nucleic acid binding",
+    gene_name %in% reg_subunit_in_dataset ~ "regulatory subunit",
+    gene_name %in% all_oxidoreductases$SYMBOL ~ "oxidoreductase activity",
+    TRUE ~ "other"))
+
+ggplot(tidy_set_df, aes(x = set_collapsed)) +
+  geom_bar(aes(fill = detail_set)) +
+  geom_text(stat = "count",
+    aes(label = ..count.., vjust = -0.2), 
+    size = 2.25,
+    inherit.aes = TRUE) +
+  scale_y_continuous(limits = c(0, 500)) +
+  axis_combmatrix(sep = "_") +
+  scale_fill_manual("GO annotation", values = fill_colors) +
+  xlab("") +
+  theme(legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        legend.position = "bottom",
+        panel.background = element_blank(), 
+        panel.grid.major = element_line(colour = "grey92", size = 0.25),
+        panel.grid.minor = element_line(colour = "grey92", size = 0.15),
+        panel.border = element_blank(), 
+        strip.background = element_blank(), 
+        plot.background = element_blank(), 
+        #complete = TRUE,
+        axis.line = element_line(color = "black", size = 0.25),
+        text = element_text(size = 7),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6))
 ```
+
+```{r}
+gtp_max_fc_df <- gtp_df %>% 
+  filter(clustername %in% gtp_params_df$clustername) %>% 
+  group_by(clustername) %>% 
+  summarise(max_fc = max(rel_value)) %>% 
+  mutate(DLPTP = clustername %in% gtp_hits_10per$clustername,
+         `Threshold-based approach` = clustername %in% 
+           gtp_threshold_df$clustername) %>% 
+  gather(key, value, -clustername, -max_fc) %>% 
+  filter(clustername %in% all_nucleotide_binder$SYMBOL) %>% 
+  filter(value)
+
+ggplot(gtp_max_fc_df, aes(log2(max_fc))) +
+  geom_histogram(fill = "steelblue", 
+                 alpha = 0.25,
+                 data = filter(gtp_max_fc_df, key == "DLPTP"),
+                position = "dodge",
+                bins = 75) +
+  geom_histogram(fill = "darkorange", 
+                 alpha = 0.25,
+                 data = filter(gtp_max_fc_df, key != "DLPTP"),
+                 position = "dodge",
+                 bins = 75) +
+  geom_vline(xintercept = log2(1.5), 
+             linetype = "dashed",
+             color = "gray") +
+  xlab(bquote(
+    'max. log'[2]~'fold change per signif. stabilized nucleotide binder')) +
+  theme_paper +
+  theme(legend.position = c(0.75, 0.75))
+```
+
 
 
 ```{r}
