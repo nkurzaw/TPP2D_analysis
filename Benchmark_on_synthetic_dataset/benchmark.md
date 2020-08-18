@@ -1,6 +1,6 @@
 Benchmark on synthetic dataset
 ================
-07 July, 2020
+18 August, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -129,6 +129,26 @@ library(TPP)
     ## The following object is masked from 'package:tidyr':
     ## 
     ##     extract
+
+Define plot style
+
+``` r
+theme_paper <- theme_bw(base_size = 6) +
+  theme(legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        panel.background = element_blank(), 
+        panel.grid.major = element_line(colour = "grey92", size = 0.25),
+        panel.grid.minor = element_line(colour = "grey92", size = 0.15),
+        panel.border = element_blank(), 
+        strip.background = element_blank(), 
+        plot.background = element_blank(), 
+        complete = TRUE,
+        axis.line = element_line(color = "black", size = 0.25),
+        text = element_text(size = 7),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6))
+```
 
 Download and read in required datasets for true positive spike-in
 profiles: - Panobinostat cell dataset Becher et al. (2016) - JQ1 lysate
@@ -272,7 +292,7 @@ ggplot(sd_log2_val_jq1, aes(sd_log2_value)) +
   facet_wrap(~temperature)
 ```
 
-<img src="md_files/benchmark-unnamed-chunk-9-1.png" width="100%" />
+<img src="md_files/benchmark-unnamed-chunk-10-1.png" width="100%" />
 
 # Simulate data
 
@@ -385,7 +405,17 @@ Compute *F* statistics
 sim_fstat_df <- computeFStatFromParams(sim_params_df)
 ```
 
-Do 2 separate rounds of bootstrapping the null distribution:
+Do 3 separate rounds of bootstrapping the null distribution:
+
+``` r
+set.seed(1, kind = "L'Ecuyer-CMRG")
+sim_s1_null_df <- bootstrapNullAlternativeModel(
+  df = sim_tp_df, params_df = sim_params_df, 
+  maxit = 500, B = 100,
+  BPPARAM = BiocParallel::MulticoreParam(workers = 20, progressbar = TRUE),
+  verbose = FALSE)
+saveRDS(sim_s1_null_df, file = "../pre_run_data/sim_s1_null_df.rds")
+```
 
 ``` r
 set.seed(2, kind = "L'Ecuyer-CMRG")
@@ -408,6 +438,7 @@ saveRDS(sim_s3_null_df, file = "../pre_run_data/sim_s3_null_df.rds")
 ```
 
 ``` r
+sim_s1_null_df <- readRDS("../pre_run_data/sim_s1_null_df.rds")
 sim_s2_null_df <- readRDS("../pre_run_data/sim_s2_null_df.rds")
 sim_s3_null_df <- readRDS("../pre_run_data/sim_s3_null_df.rds")
 ```
@@ -613,6 +644,9 @@ thres_found_recurrently <- unique(passed_filter_df$clustername[
 Get FDR estimates for different numbers of bootstraps
 
 ``` r
+sim_fdr_df_s1_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s1_null_df,
+                                     squeezeDenominator = FALSE)
 sim_fdr_df_s2_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df,
                                      squeezeDenominator = FALSE)
@@ -620,59 +654,63 @@ sim_fdr_df_s3_b100_byMsExp <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s3_null_df,
                                      squeezeDenominator = FALSE)
 
+sim_fdr_df_s1_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
+                                     df_null = sim_s1_null_df,
+                                     squeezeDenominator = TRUE)
 sim_fdr_df_s2_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s2_null_df,
                                      squeezeDenominator = TRUE)
 sim_fdr_df_s3_b100_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
                                      df_null = sim_s3_null_df,
                                      squeezeDenominator = TRUE)
-
-sim_fdr_df_s2_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = FALSE)
-sim_fdr_df_s3_b20_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = FALSE)
-
-sim_fdr_df_s2_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = TRUE)
-sim_fdr_df_s3_b20_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:20, sep = "_")),
-                         squeezeDenominator = TRUE)
-
-sim_fdr_df_s2_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = FALSE)
-sim_fdr_df_s3_b5_byMsExp <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = FALSE)
-
-sim_fdr_df_s2_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s2_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = TRUE)
-sim_fdr_df_s3_b5_byMsExp_mod <- getFDR(df_out = sim_fstat_df,
-                         df_null = filter(sim_s3_null_df, dataset %in%
-                                            paste("bootstrap", 1:5, sep = "_")),
-                         squeezeDenominator = TRUE)
 ```
 
 Compute precision and recall for each of the FDR estimates based on the
 different number of bootstraps
 
 ``` r
+pr_b100_1_byMsExp <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s1_b100_byMsExp, ntp = 80)
 pr_b100_2_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp, ntp = 80)
 pr_b100_3_byMsExp <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b100_byMsExp, ntp = 80)
 
+pr_b100_1_byMsExp_mod <- computePrecisionRecall(
+    fdr_df = sim_fdr_df_s1_b100_byMsExp_mod, ntp = 80)
+```
+
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+    
+    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
+    ## min; returning Inf
+
+``` r
 pr_b100_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp_mod, ntp = 80)
 ```
@@ -731,196 +769,22 @@ pr_b100_3_byMsExp_mod <- computePrecisionRecall(
     ## min; returning Inf
 
 ``` r
-pr_b20_2_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b20_byMsExp, ntp = 80)
-pr_b20_3_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b20_byMsExp, ntp = 80)
-
-pr_b20_2_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b20_byMsExp_mod, ntp = 80)
-```
-
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
-pr_b20_3_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b20_byMsExp_mod, ntp = 80)
-```
-
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
-pr_b5_2_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b5_byMsExp, ntp = 80)
-pr_b5_3_byMsExp <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b5_byMsExp, ntp = 80)
-
-pr_b5_2_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s2_b5_byMsExp_mod, ntp = 80)
-```
-
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
-pr_b5_3_byMsExp_mod <- computePrecisionRecall(
-    fdr_df = sim_fdr_df_s3_b5_byMsExp_mod, ntp = 80)
-
-b100_pr_df <- bind_rows(
-  pr_b100_2_byMsExp %>% 
-    mutate(variant = "DLPTP standard, B = 100"), 
-  pr_b100_3_byMsExp %>% 
-    mutate(variant = "DLPTP standard, B = 100"),
-   pr_b100_2_byMsExp_mod %>% 
-    mutate(variant = "DLPTP moderated, B = 100"),
-  pr_b100_3_byMsExp_mod %>% 
-    mutate(variant = "DLPTP moderated, B = 100"),
-  tibble(
-    precision = length(thres_found_recurrently[
-      !grepl("protein",thres_found_recurrently)])/
-      length(thres_found_recurrently),
-    recall = length(thres_found_recurrently[
-      !grepl("protein", thres_found_recurrently)])/80,
-    alpha = 0,
-    variant = "Threshold-based approach")) %>% 
-  group_by(variant, alpha) %>% 
-  summarize(mean_fdr = mean(1-precision),
-            mean_tpr = mean(recall),
-            sd_fdr = sd(1-precision),
-            sd_tpr = sd(recall)) %>% 
-  ungroup 
-```
-
-    ## `summarise()` regrouping output by 'variant' (override with `.groups` argument)
-
-``` r
-ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr, 
-                       color = as.factor(variant))) + 
-  geom_path(size = 0.5) + 
-  geom_point(shape = 8, size = 3,
-             data = filter(filter(b100_pr_df, alpha == "0.1"))) +
-    geom_point(shape = 3, size = 3,
-             data = filter(filter(b100_pr_df, alpha == "0.05"))) +
-    geom_point(shape = 4, size = 3,
-             data = filter(filter(b100_pr_df, alpha == "0.01"))) +
-  geom_point(shape = 6, size = 3,
-             data = filter(filter(b100_pr_df, 
-                                  variant == "Threshold-based\napproach"))) +
-  scale_color_manual("variant", 
-                     values = c("deepskyblue4", "darkorchid4", "darkorange1")) +
-  labs(x = "FDR", y = "TPR") +
-  geom_vline(xintercept = c(0.01, 0.05, 0.1),
-             linetype = "dashed", alpha = 0.65,
-             size = 0.25) +
-  coord_fixed() +
-  theme_classic() +
-  theme(legend.position = c(0.75, 0.2))
-```
-
-<img src="md_files/benchmark-unnamed-chunk-21-1.png" width="100%" />
-
-``` r
 all_alpha_fdr_df <- bind_rows(
+  pr_b100_1_byMsExp %>% 
+     mutate(variant = "DLPTP standard, seed 1"), 
    pr_b100_2_byMsExp %>% 
-     mutate(variant = "DLPTP standard, B = 100"), 
+     mutate(variant = "DLPTP standard, seed 2"), 
    pr_b100_3_byMsExp %>% 
-     mutate(variant = "DLPTP standard, B = 100"), 
+     mutate(variant = "DLPTP standard, seed 3"), 
+  pr_b100_1_byMsExp_mod %>% 
+     mutate(variant = "DLPTP moderated, seed 1"),
    pr_b100_2_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100"),
+     mutate(variant = "DLPTP moderated, seed 2"),
    pr_b100_3_byMsExp_mod %>% 
-     mutate(variant = "DLPTP moderated, B = 100"),
-   pr_b20_2_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 20"),
-   pr_b20_3_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 20"),
-   pr_b20_2_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 20"),
-   pr_b20_3_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 20"),
-   pr_b5_2_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 5"),
-   pr_b5_3_byMsExp %>%
-     mutate(variant = "DLPTP standard, B = 5"),
-   pr_b5_2_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 5"),
-   pr_b5_3_byMsExp_mod %>%
-     mutate(variant = "DLPTP moderated, B = 5")) %>% 
+     mutate(variant = "DLPTP moderated, seed 3")) %>% 
   group_by(variant, alpha) %>% 
   summarize(mean_fdr = mean(1-precision),
-            mean_tpr = mean(recall),
-            sd_fdr = sd(1-precision),
-            sd_tpr = sd(recall)) %>% 
+            mean_tpr = mean(recall)) %>% 
   ungroup
 ```
 
@@ -943,12 +807,68 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
                "darkorchid4",
                "darkorchid3",
                "darkorchid1")) +
-  labs(x = expression(alpha*" level cutoff"),
+  labs(x = "nominal FDR",
        y = "observed FDR") +
   theme_classic()
 ```
 
-<img src="md_files/benchmark-unnamed-chunk-22-1.png" width="100%" />
+<img src="md_files/benchmark-unnamed-chunk-23-1.png" width="100%" />
+
+``` r
+b100_pr_df <- bind_rows(
+  pr_b100_1_byMsExp %>% 
+    mutate(variant = "DLPTP standard"), 
+  pr_b100_2_byMsExp %>% 
+    mutate(variant = "DLPTP standard"),
+  pr_b100_3_byMsExp %>% 
+    mutate(variant = "DLPTP standard"), 
+  pr_b100_1_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated"),
+   pr_b100_2_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated"),
+  pr_b100_3_byMsExp_mod %>% 
+    mutate(variant = "DLPTP moderated"),
+  tibble(
+    precision = length(thres_found_recurrently[
+      !grepl("protein",thres_found_recurrently)])/
+      length(thres_found_recurrently),
+    recall = length(thres_found_recurrently[
+      !grepl("protein", thres_found_recurrently)])/80,
+    alpha = 0,
+    variant = "Threshold-based approach")) %>% 
+  group_by(variant, alpha) %>% 
+  summarize(mean_fdr = mean(1-precision),
+            mean_tpr = mean(recall)) %>% 
+  ungroup 
+```
+
+    ## `summarise()` regrouping output by 'variant' (override with `.groups` argument)
+
+``` r
+ggplot(b100_pr_df, aes(x = mean_fdr, y = mean_tpr, 
+                       color = as.factor(variant))) + 
+  geom_path(size = 0.5) + 
+  geom_point(shape = 8, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.1"))) +
+    geom_point(shape = 3, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.05"))) +
+    geom_point(shape = 4, size = 3,
+             data = filter(filter(b100_pr_df, alpha == "0.01"))) +
+  geom_point(shape = 6, size = 3,
+             data = filter(filter(b100_pr_df, 
+                                  variant == "Threshold-based approach"))) +
+  scale_color_manual("variant", 
+                     values = c("deepskyblue4", "darkorchid4", "darkorange1")) +
+  labs(x = "FDR", y = "TPR") +
+  geom_vline(xintercept = c(0.01, 0.05, 0.1),
+             linetype = "dashed", alpha = 0.65,
+             size = 0.25) +
+  coord_fixed() +
+  theme_paper + 
+  theme(legend.position = c(0.75, 0.2))
+```
+
+<img src="md_files/benchmark-unnamed-chunk-24-1.png" width="100%" />
 
 ``` r
 sessionInfo()
@@ -970,10 +890,10 @@ sessionInfo()
     ## [8] methods   base     
     ## 
     ## other attached packages:
-    ##  [1] TPP_3.16.2           magrittr_1.5         org.Hs.eg.db_3.11.4 
+    ##  [1] TPP_3.17.0           magrittr_1.5         org.Hs.eg.db_3.11.4 
     ##  [4] AnnotationDbi_1.50.0 IRanges_2.22.2       S4Vectors_0.26.1    
     ##  [7] Biobase_2.48.0       BiocGenerics_0.34.0  readxl_1.3.1        
-    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.5         
+    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.7         
     ## [13] dplyr_1.0.0         
     ## 
     ## loaded via a namespace (and not attached):
@@ -1002,6 +922,7 @@ sessionInfo()
     ## [67] biobroom_1.20.0      tidyselect_1.1.0     xfun_0.14
 
 # References
+
 <div id="refs" class="references">
 
 <div id="ref-Becher2016">
