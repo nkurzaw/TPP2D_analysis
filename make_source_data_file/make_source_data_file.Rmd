@@ -243,7 +243,7 @@ pano_cell_df <- recomputeSignalFromRatios(pano_cell_fil)
 pano_params_df <- readRDS("../pre_run_data/pano_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 pano_fstat_df <- computeFStatFromParams(pano_params_df)
 ```
@@ -269,7 +269,7 @@ Make output table
 pano_out_tab <- pano_fdr_df %>% filter(dataset == "true") %>% 
     dplyr::select(protein_id = representative, 
                   gene_name = clustername, nObsRound, 
-                  rssH0,  rssH1, F_statistic) %>% 
+                  rssH0,  rssH1, kappa = slopeH1, F_statistic) %>% 
     mutate(stabilized_hit_at_10percent_FDR = 
                case_when(
                    protein_id %in% 
@@ -283,13 +283,13 @@ pano_out_tab <- pano_fdr_df %>% filter(dataset == "true") %>%
 
 Make sure we can still make the plot
 ```{r}
-ggplot(pano_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+ggplot(pano_out_tab, aes(sign(kappa)*sqrt(rssH0-rssH1), 
+                         log2(F_statistic + 1))) +
     geom_point(color = "gray", alpha = 0.5) +
     geom_point(color = "steelblue", alpha = 0.5, 
                data = filter(pano_out_tab, stabilized_hit_at_10percent_FDR)) +
     geom_point(color = "orange", alpha = 0.5, 
-               data = filter(pano_out_tab, destabilized_hit_at_10percent_FDR)) +
-    coord_cartesian(xlim = c(-12.5, 7.5))
+               data = filter(pano_out_tab, destabilized_hit_at_10percent_FDR)) 
 ```
 
 ```{r}
@@ -399,7 +399,7 @@ jq1_out_tab <-
         filter(dataset == "true") %>% 
         dplyr::select(protein_id = representative, 
                       gene_name = clustername, nObsRound, 
-                      rssH0,  rssH1, F_statistic) %>% 
+                      rssH0,  rssH1, kappa = slopeH1, F_statistic) %>% 
     mutate(stabilized_hit_at_10percent_FDR = 
                case_when(protein_id %in% 
                              filter(jq1_hits_df, slopeH1 > 0)$representative ~
@@ -412,13 +412,12 @@ jq1_out_tab <-
 
 Make sure we can still make the plot
 ```{r}
-ggplot(jq1_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+ggplot(jq1_out_tab, aes(sign(kappa)*sqrt(rssH0-rssH1), log2(F_statistic + 1))) +
     geom_point(color = "gray", alpha = 0.5) +
     geom_point(color = "steelblue", alpha = 0.5, 
                data = filter(jq1_out_tab, stabilized_hit_at_10percent_FDR)) +
     geom_point(color = "orange", alpha = 0.5, 
-               data = filter(jq1_out_tab, destabilized_hit_at_10percent_FDR)) +
-    coord_cartesian(xlim = c(-12.5, 7.5))
+               data = filter(jq1_out_tab, destabilized_hit_at_10percent_FDR)) 
 ```
 
 ```{r}
@@ -488,12 +487,12 @@ pci_df <- recomputeSignalFromRatios(pci_fil)
 pci_params_df <- readRDS("../pre_run_data/pci_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 pci_fstat_df <- computeFStatFromParams(pci_params_df)
 ```
 
-Get $B$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+Get $B = 100$, prerun datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 
 ```{r}
 pci_null_df <- readRDS("../pre_run_data/pci_null_df.rds")
@@ -502,8 +501,8 @@ pci_null_df <- readRDS("../pre_run_data/pci_null_df.rds")
 ```{r}
 ## manually identified carry-over cases
 carry_over_cases <- 
-  c("ALDH1B1", "BTK", "CAMK2G", "CSK", "CSNK2A1", "CSNK2A2", "GAK",
-    "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
+  c("ALDH1B1", "BTK", "CAMK2G", "CAMK2D", "CSK", "CSNK2A1", "CSNK2A2", 
+    "GAK", "CSNK2B", "GSK3A", "LYN", "MAP4K1", "MAPK1", "MAPK9", "NEK9", 
     "NQO1", "PDXK", "PRKAA1", "PRKAG1", "RPS6KA1", "ULK3",
     "CDK2", "CDK5")
 
@@ -520,7 +519,8 @@ pci_out_tab <- pci_fdr_df %>%
     filter(dataset == "true") %>% 
     dplyr::select(protein_id = representative, 
                   gene_name = clustername, 
-                  nObsRound, rssH0,  rssH1, F_statistic) %>% 
+                  nObsRound, rssH0,  rssH1, 
+                  kappa = slopeH1, F_statistic) %>% 
   mutate(affected_by_carry_over = case_when(
     gene_name %in% carry_over_cases ~ TRUE, TRUE ~ FALSE),
     stabilized_hit_at_10percent_FDR = case_when(
@@ -535,13 +535,12 @@ pci_out_tab <- pci_fdr_df %>%
 
 Make sure we can still make the plot
 ```{r}
-ggplot(pci_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+ggplot(pci_out_tab, aes(sign(kappa)*sqrt(rssH0-rssH1), log2(F_statistic + 1))) +
     geom_point(color = "gray", alpha = 0.5) +
     geom_point(color = "steelblue", alpha = 0.5, 
                data = filter(pci_out_tab, stabilized_hit_at_10percent_FDR)) +
     geom_point(color = "orange", alpha = 0.5, 
-               data = filter(pci_out_tab, destabilized_hit_at_10percent_FDR)) +
-    coord_cartesian(xlim = c(-12.5, 7.5))
+               data = filter(pci_out_tab, destabilized_hit_at_10percent_FDR)) 
 ```
 
 ### BRD-3811
@@ -585,7 +584,7 @@ Compute null and alternative model fits and extract parameters
 brd_params_df <- readRDS("../pre_run_data/brd_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 brd_fstat_df <- computeFStatFromParams(brd_params_df)
 ```
@@ -614,7 +613,7 @@ brd_hits_df <- findHits(brd_fdr_df, alpha = 0.1)
 brd_out_tab <- brd_fdr_df %>% filter(dataset == "true") %>%
     dplyr::select(protein_id = representative, 
                   gene_name = clustername, nObsRound,
-                  rssH0,  rssH1, F_statistic) %>% 
+                  rssH0,  rssH1, kappa = slopeH1, F_statistic) %>% 
   mutate(affected_by_carry_over = case_when(
     gene_name %in%
       carry_over_cases_brd3811 ~ TRUE, TRUE ~ FALSE),
@@ -630,15 +629,13 @@ brd_out_tab <- brd_fdr_df %>% filter(dataset == "true") %>%
 
 Make sure we can still make the plot
 ```{r}
-ggplot(brd_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+ggplot(brd_out_tab, aes(sign(kappa)*sqrt(rssH0-rssH1), log2(F_statistic + 1))) +
     geom_point(color = "gray", alpha = 0.5) +
     geom_point(color = "steelblue", alpha = 0.5, 
                data = filter(brd_out_tab, stabilized_hit_at_10percent_FDR)) +
     geom_point(color = "orange", alpha = 0.5, 
-               data = filter(brd_out_tab, destabilized_hit_at_10percent_FDR)) +
-    coord_cartesian(xlim = c(-12.5, 7.5))
+               data = filter(brd_out_tab, destabilized_hit_at_10percent_FDR)) 
 ```
-
 
 ### In vitro assay
 
@@ -678,6 +675,36 @@ all_atp_binder <- AnnotationDbi::select(
 all_gtp_binder <- AnnotationDbi::select(
   org.Hs.eg.db::org.Hs.eg.db, 
   keys = "GO:0005525", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_gtpase_activity <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0003924", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_nucleotide_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0000166", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_nucleic_acid_binder <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0003676", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_enzyme_regulator <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0030234", 
+  columns = c("SYMBOL", "IPI"), 
+  keytype = "GOALL")
+
+all_oxidoreductases <- AnnotationDbi::select(
+  org.Hs.eg.db::org.Hs.eg.db, 
+  keys = "GO:0016491", 
   columns = c("SYMBOL", "IPI"), 
   keytype = "GOALL")
 ```
@@ -721,7 +748,7 @@ gtp_df <- recomputeSignalFromRatios(gtp_fil)
 gtp_params_df <- readRDS("../pre_run_data/gtp_params_df.rds")
 ```
 
-Compute *F* statistics
+Compute *F*-statistics
 ```{r}
 gtp_fstat_df <- computeFStatFromParams(gtp_params_df)
 ```
@@ -737,25 +764,17 @@ Compute FDR and find hits:
 ```{r}
 gtp_fdr_df <- getFDR(df_out = gtp_fstat_df,
                      df_null = gtp_null_df,
-                     squeezeDenominator = TRUE)
+                     squeezeDenominator = TRUE) %>% 
+  mutate(clustername = gsub("^SEPT", "SEPTIN", clustername))
   
 gtp_hits_10per <- findHits(gtp_fdr_df, 0.1) 
-gtp_hits_1per <- findHits(gtp_fdr_df, 0.01)
 
 
 gtp_out_tab <- gtp_fdr_df %>% filter(dataset == "true") %>% 
     dplyr::select(protein_id = representative, 
                   gene_name = clustername, nObsRound,
-                  rssH0, rssH1, F_statistic)%>% 
-  mutate(stabilized_hit_at_1percent_FDR = 
-           case_when(protein_id %in% 
-                       filter(gtp_hits_1per, slopeH1 > 0)$representative ~ TRUE,
-                     TRUE ~ FALSE),
-         destabilized_hit_at_1percent_FDR = 
-           case_when(gene_name %in% 
-                       filter(gtp_hits_1per, slopeH1 < 0)$clustername ~ TRUE,
-                     TRUE ~ FALSE),
-         stabilized_hit_at_10percent_FDR = 
+                  rssH0, rssH1, kappa = slopeH1, F_statistic)%>% 
+  mutate(stabilized_hit_at_10percent_FDR = 
            case_when(gene_name %in% 
                        filter(gtp_hits_10per, slopeH1 > 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
@@ -773,7 +792,7 @@ gtp_out_tab <- gtp_fdr_df %>% filter(dataset == "true") %>%
 
 Make sure we can still make the plot
 ```{r}
-ggplot(gtp_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
+ggplot(gtp_out_tab, aes(sign(kappa)*sqrt(rssH0-rssH1), log2(F_statistic + 1))) +
     geom_point(color = "gray", alpha = 0.5) +
     geom_point(color = "black", alpha = 0.5, 
                data = filter(gtp_out_tab, stabilized_hit_at_10percent_FDR |
@@ -786,34 +805,98 @@ ggplot(gtp_out_tab, aes(log2(rssH0-rssH1), asinh(F_statistic))) +
                data = filter(gtp_out_tab, GO_annotated_GTP_binder &
                                (stabilized_hit_at_10percent_FDR |
                                destabilized_hit_at_10percent_FDR))) +
-    coord_cartesian(xlim = c(-12.5, 7.5)) +
+    coord_cartesian(xlim = c(-5.5, 7.5)) +
     facet_wrap(~nObsRound)
 ```
 
 ```{r}
 gtp_threshold_df <- read_xlsx("../GTP_Jurkat_gelfil_lysate_2DTPP/Supplementary_Data_3.xlsx", sheet = "GTP") %>% 
   dplyr::select(clustername, stabilized_hits_found_by_threshold) %>% 
-  filter(stabilized_hits_found_by_threshold)
+  filter(stabilized_hits_found_by_threshold) %>% 
+  mutate(clustername = gsub("^SEPT", "SEPTIN", clustername)) 
 
-gtp_hits_10per <- findHits(gtp_fdr_df, 0.10) %>% 
+gtp_hits_10per <- gtp_hits_df %>% 
   filter(detected_effectH1 == "stability", slopeH1 > 0)
-gtp_hits_1per <- findHits(gtp_fdr_df, 0.01) %>% 
-  filter(detected_effectH1 == "stability", slopeH1 > 0)
 
-
+atp_binder_in_dataset <- unique(intersect(all_atp_binder$SYMBOL,
+                                          gtp_fdr_df$clustername))
+gtp_binder_in_dataset <- unique(intersect(all_gtp_binder$SYMBOL,
+                                          gtp_fdr_df$clustername))
+nucleotide_binder_in_dataset <- unique(intersect(all_nucleotide_binder$SYMBOL,
+                                                 gtp_fdr_df$clustername))
+nucleic_acid_binder_in_dataset <- unique(intersect(all_nucleic_acid_binder$SYMBOL,
+                                                   gtp_fdr_df$clustername))
+reg_subunit_in_dataset <- unique(intersect(all_enzyme_regulator$SYMBOL,
+                                           gtp_fdr_df$clustername))
 set_intersect_df <- data.frame(
   gene_name = filter(gtp_fdr_df, !duplicated(clustername))$clustername) %>% 
-  mutate(`ATP binders` = as.numeric(gene_name %in% all_atp_binder$SYMBOL),
-         `GTP binders` = as.numeric(gene_name %in% all_gtp_binder$SYMBOL),
-         `DLPTP hits at 10% FDR` = 
-           as.numeric(gene_name %in% gtp_hits_10per$clustername),
-         `DLPTP hits at 1% FDR` = 
-           as.numeric(gene_name %in% gtp_hits_1per$clustername),
-         `Hits found by threshold-based approach` = 
-           as.numeric(gene_name %in% gtp_threshold_df$clustername))
+  mutate(
+    `Nucleotide binders` = as.numeric(
+      gene_name %in% nucleotide_binder_in_dataset),
+    `DLPTP hits at 10% FDR` = as.numeric(
+      gene_name %in% gtp_hits_10per$clustername),
+    `Threshold-based hits` = as.numeric(
+      gene_name %in% gtp_threshold_df$clustername))
 
-UpSetR::upset(set_intersect_df, nsets = 5)
+
+fill_colors <- c("ATP binding" = "darkgreen",
+                 "GTP binding" = "violet",
+                 "Nucleic acid binding" = "goldenrod",
+                 "regulatory subunit" = "darkturquoise",
+                 "oxidoreductase activity" = "brown",
+                 "other" = "gray")
+
+tidy_set_df <- set_intersect_df %>% 
+  as_tibble() %>% 
+  gather(key, value, -gene_name) %>% 
+  filter(value == 1) %>% 
+  dplyr::select(-value) %>% 
+  group_by(gene_name) %>%
+  summarise(set = list(key)) %>% 
+  ungroup() %>% 
+  mutate(set_collapsed = factor(
+    sapply(set, function(x) paste0(sort(x), collapse="_")),
+    levels = c("Nucleotide binders", "DLPTP hits at 10% FDR",
+               "Threshold-based hits",
+               "DLPTP hits at 10% FDR_Nucleotide binders",
+               "Nucleotide binders_Threshold-based hits",
+               "DLPTP hits at 10% FDR_Threshold-based hits",
+               "DLPTP hits at 10% FDR_Nucleotide binders_Threshold-based hits"))) %>% 
+  mutate(detail_set = case_when(
+    gene_name %in% gtp_binder_in_dataset | gene_name %in% all_gtpase_activity$SYMBOL ~ "GTP binding",
+    gene_name %in% atp_binder_in_dataset ~ "ATP binding",
+    gene_name %in% nucleic_acid_binder_in_dataset ~ "Nucleic acid binding",
+    gene_name %in% reg_subunit_in_dataset ~ "regulatory subunit",
+    gene_name %in% all_oxidoreductases$SYMBOL ~ "oxidoreductase activity",
+    TRUE ~ "other"))
+
+ggplot(tidy_set_df, aes(x = set_collapsed)) +
+  geom_bar(aes(fill = detail_set)) +
+  geom_text(stat = "count",
+    aes(label = ..count.., vjust = -0.2), 
+    size = 2.25,
+    inherit.aes = TRUE) +
+  scale_y_continuous(limits = c(0, 500)) +
+  axis_combmatrix(sep = "_") +
+  scale_fill_manual("GO annotation", values = fill_colors) +
+  xlab("") +
+  theme(legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        legend.position = "bottom",
+        panel.background = element_blank(), 
+        panel.grid.major = element_line(colour = "grey92", size = 0.25),
+        panel.grid.minor = element_line(colour = "grey92", size = 0.15),
+        panel.border = element_blank(), 
+        strip.background = element_blank(), 
+        plot.background = element_blank(), 
+        #complete = TRUE,
+        axis.line = element_line(color = "black", size = 0.25),
+        text = element_text(size = 7),
+        axis.ticks = element_line(color = "black", size = 0.25),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6))
 ```
+
 
 # Supplementary figures
 
@@ -860,26 +943,62 @@ csk_pci_df <- filter(pci_df, clustername == "CSK") %>%
                 temperature, conc, log2_value, rel_value)
 ```
 
+## Figure S5
+
+```{r}
+gtp_max_fc_df <- gtp_df %>% 
+  filter(clustername %in% gtp_params_df$clustername) %>% 
+  group_by(clustername) %>% 
+  summarise(max_fc = max(rel_value)) %>% 
+  mutate(DLPTP = clustername %in% gtp_hits_10per$clustername,
+         `Threshold-based approach` = clustername %in% 
+           gtp_threshold_df$clustername) %>% 
+  gather(key, value, -clustername, -max_fc) %>% 
+  filter(clustername %in% all_nucleotide_binder$SYMBOL) %>% 
+  filter(value)
+
+ggplot(gtp_max_fc_df, aes(log2(max_fc))) +
+  geom_histogram(fill = "steelblue", 
+                 alpha = 0.25,
+                 data = filter(gtp_max_fc_df, key == "DLPTP"),
+                position = "dodge",
+                bins = 75) +
+  geom_histogram(fill = "darkorange", 
+                 alpha = 0.25,
+                 data = filter(gtp_max_fc_df, key != "DLPTP"),
+                 position = "dodge",
+                 bins = 75) +
+  geom_vline(xintercept = log2(1.5), 
+             linetype = "dashed",
+             color = "gray") +
+  xlab(bquote(
+    'max. log'[2]~'fold change per signif. stabilized nucleotide binder'))
+```
+
 
 # Make final list
 ```{r}
 out_list <- list(
   "Figure2a" = all_alpha_fdr_df %>% as.data.frame(),
   "Figure2b" = b100_pr_df %>% as.data.frame(),
-  "Figure3a_FigureS2a" = pano_out_tab %>% as.data.frame(),
-  "Figure3b_FigureS2b" = jq1_out_tab %>% as.data.frame(),
-  "Figure4b_FigureS4a" = pci_out_tab %>% as.data.frame(),
-  "Figure4d_FigureS4b" = brd_out_tab %>% as.data.frame(),
+  "Figure3a_FigureS2a" = pano_out_tab %>%  
+    dplyr::select(-protein_id) %>% as.data.frame(),
+  "Figure3b_FigureS2b" = jq1_out_tab %>%  
+    dplyr::select(-protein_id) %>% as.data.frame(),
+  "Figure4b_FigureS4a" = pci_out_tab %>%  
+    dplyr::select(-protein_id) %>% as.data.frame(),
+  "Figure4d_FigureS4b" = brd_out_tab %>%  
+    dplyr::select(-protein_id) %>% as.data.frame(),
   "Figure4e" = lap3_tab %>% as.data.frame(),
-  "Figure5a" = gtp_out_tab %>% as.data.frame(),
-  "Figure5b" = set_intersect_df %>% as.data.frame(),
+  "Figure5a" = gtp_out_tab %>%  
+    dplyr::select(-protein_id) %>% as.data.frame(),
+  "Figure5b" = tidy_set_df %>% dplyr::select(-set) %>% as.data.frame(),
   "FigureS1" = brd4_jq1_df %>% as.data.frame(),
-  # "FigureS2a" = pano_out_tab,
-  # "FigureS2b" = jq1_out_tab,
   "FigureS2c" = pano_venn_df %>% as.data.frame(),
   "FigureS2d" = jq1_venn_df %>% as.data.frame(),
   "FigureS3a-e" = examples_pano_df %>% as.data.frame(),
-  "FigureS4c" = csk_pci_df %>% as.data.frame()
+  "FigureS4c" = csk_pci_df %>% as.data.frame(),
+  "FigureS5b" = gtp_max_fc_df %>% as.data.frame()
 )
 ```
 
