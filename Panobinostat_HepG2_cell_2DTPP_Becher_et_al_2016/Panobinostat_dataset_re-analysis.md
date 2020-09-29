@@ -1,6 +1,6 @@
 Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016
 ================
-17 August, 2020
+29 September, 2020
 
 # Step-by-step walk through the anlysis
 
@@ -406,7 +406,7 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.2 tidyr_1.1.0   TPP2D_1.5.7  
+    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.2 tidyr_1.1.0   TPP2D_1.5.10 
     ## [6] dplyr_1.0.0  
     ## 
     ## loaded via a namespace (and not attached):
@@ -424,7 +424,7 @@ sessionInfo()
     ## [34] BiocParallel_1.22.0 rmarkdown_2.2       gdata_2.18.0       
     ## [37] limma_3.44.1        farver_2.0.3        purrr_0.3.4        
     ## [40] magrittr_1.5        scales_1.1.1        codetools_0.2-16   
-    ## [43] ellipsis_0.3.1      htmltools_0.4.0     MASS_7.3-51.6      
+    ## [43] ellipsis_0.3.1      htmltools_0.5.0     MASS_7.3-51.6      
     ## [46] colorspace_1.4-1    labeling_0.3        KernSmooth_2.23-17 
     ## [49] stringi_1.4.6       RCurl_1.98-1.2      munsell_0.5.0      
     ## [52] doParallel_1.0.15   crayon_1.3.4
