@@ -167,7 +167,7 @@ Compute *F*-statistics
 gtp_fstat_df <- computeFStatFromParams(gtp_params_df)
 ```
 
-Get $B$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
+Get $B = 100$ datasets expected under the null model and perform model fitting and compute F statistics to obtain a null distribution for FDR calibration:
 ```{r eval=reRun}
 set.seed(12, kind = "L'Ecuyer-CMRG")
 gtp_null_df <- bootstrapNullAlternativeModel(
