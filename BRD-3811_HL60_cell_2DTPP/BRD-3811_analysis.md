@@ -1,6 +1,6 @@
 Analysis of BRD-3811 dataset
 ================
-17 August, 2020
+29 September, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -385,7 +385,7 @@ hits_entrez <- bitr(brd_hits_df$clustername,
     ## 'select()' returned 1:1 mapping between keys and columns
 
     ## Warning in bitr(brd_hits_df$clustername, fromType = "SYMBOL", toType =
-    ## c("ENTREZID"), : 13.1% of input gene IDs are fail to map...
+    ## c("ENTREZID"), : 11.69% of input gene IDs are fail to map...
 
 ``` r
 backg_entrez <- bitr(brd_fdr_df$clustername, 
@@ -437,7 +437,7 @@ sessionInfo()
     ##  [1] org.Hs.eg.db_3.11.4    AnnotationDbi_1.50.0   IRanges_2.22.2        
     ##  [4] S4Vectors_0.26.1       Biobase_2.48.0         BiocGenerics_0.34.0   
     ##  [7] clusterProfiler_3.16.0 readxl_1.3.1           ggplot2_3.3.2         
-    ## [10] tidyr_1.1.0            TPP2D_1.5.7            dplyr_1.0.0           
+    ## [10] tidyr_1.1.0            TPP2D_1.5.10           dplyr_1.0.0           
     ## 
     ## loaded via a namespace (and not attached):
     ##  [1] bitops_1.0-6        enrichplot_1.8.1    bit64_0.9-7        
@@ -449,7 +449,7 @@ sessionInfo()
     ## [19] xml2_1.3.2          labeling_0.3        triebeard_0.3.0    
     ## [22] scales_1.1.1        ggridges_0.5.2      stringr_1.4.0      
     ## [25] digest_0.6.25       rmarkdown_2.2       DOSE_3.14.0        
-    ## [28] pkgconfig_2.0.3     htmltools_0.4.0     limma_3.44.1       
+    ## [28] pkgconfig_2.0.3     htmltools_0.5.0     limma_3.44.1       
     ## [31] rlang_0.4.6         RSQLite_2.2.0       gridGraphics_0.5-0 
     ## [34] generics_0.0.2      farver_2.0.3        jsonlite_1.6.1     
     ## [37] BiocParallel_1.22.0 GOSemSim_2.14.0     zip_2.0.4          
