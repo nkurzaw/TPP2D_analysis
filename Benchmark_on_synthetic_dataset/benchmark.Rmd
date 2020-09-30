@@ -574,8 +574,8 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
   geom_abline(slope = 1, 
               color = "darkgray",
               linetype = "dashed") +
-  coord_cartesian(xlim = c(0, 0.2),
-                  ylim = c(0, 0.2)) +
+  coord_cartesian(xlim = c(0, 0.15),
+                  ylim = c(0, 0.15)) +
   scale_color_manual(
     "variant",
     values = c("deepskyblue4",

@@ -1,6 +1,6 @@
 Benchmark on synthetic dataset
 ================
-18 August, 2020
+30 September, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -678,97 +678,11 @@ pr_b100_3_byMsExp <- computePrecisionRecall(
 
 pr_b100_1_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s1_b100_byMsExp_mod, ntp = 80)
-```
-
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
 pr_b100_2_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s2_b100_byMsExp_mod, ntp = 80)
-```
-
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
 pr_b100_3_byMsExp_mod <- computePrecisionRecall(
     fdr_df = sim_fdr_df_s3_b100_byMsExp_mod, ntp = 80)
-```
 
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-    
-    ## Warning in min(rank[FDR > alpha], na.rm = TRUE): no non-missing arguments to
-    ## min; returning Inf
-
-``` r
 all_alpha_fdr_df <- bind_rows(
   pr_b100_1_byMsExp %>% 
      mutate(variant = "DLPTP standard, seed 1"), 
@@ -797,8 +711,8 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
   geom_abline(slope = 1, 
               color = "darkgray",
               linetype = "dashed") +
-  coord_cartesian(xlim = c(0, 0.2),
-                  ylim = c(0, 0.2)) +
+  coord_cartesian(xlim = c(0, 0.15),
+                  ylim = c(0, 0.15)) +
   scale_color_manual(
     "variant",
     values = c("deepskyblue4",
@@ -893,7 +807,7 @@ sessionInfo()
     ##  [1] TPP_3.17.0           magrittr_1.5         org.Hs.eg.db_3.11.4 
     ##  [4] AnnotationDbi_1.50.0 IRanges_2.22.2       S4Vectors_0.26.1    
     ##  [7] Biobase_2.48.0       BiocGenerics_0.34.0  readxl_1.3.1        
-    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.7         
+    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.10        
     ## [13] dplyr_1.0.0         
     ## 
     ## loaded via a namespace (and not attached):
@@ -902,7 +816,7 @@ sessionInfo()
     ##  [7] cellranger_1.1.0     yaml_2.2.1           backports_1.1.7     
     ## [10] lattice_0.20-41      pillar_1.4.4         RSQLite_2.2.0       
     ## [13] glue_1.4.1           limma_3.44.1         digest_0.6.25       
-    ## [16] RColorBrewer_1.1-2   colorspace_1.4-1     htmltools_0.4.0     
+    ## [16] RColorBrewer_1.1-2   colorspace_1.4-1     htmltools_0.5.0     
     ## [19] plyr_1.8.6           pkgconfig_2.0.3      broom_0.5.6         
     ## [22] purrr_0.3.4          scales_1.1.1         VennDiagram_1.6.20  
     ## [25] openxlsx_4.1.5       BiocParallel_1.22.0  tibble_3.0.1        
