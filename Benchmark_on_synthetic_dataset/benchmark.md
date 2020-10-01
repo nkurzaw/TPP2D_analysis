@@ -1,6 +1,6 @@
 Benchmark on synthetic dataset
 ================
-30 September, 2020
+01 October, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -807,7 +807,7 @@ sessionInfo()
     ##  [1] TPP_3.17.0           magrittr_1.5         org.Hs.eg.db_3.11.4 
     ##  [4] AnnotationDbi_1.50.0 IRanges_2.22.2       S4Vectors_0.26.1    
     ##  [7] Biobase_2.48.0       BiocGenerics_0.34.0  readxl_1.3.1        
-    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.10        
+    ## [10] ggplot2_3.3.2        tidyr_1.1.0          TPP2D_1.5.11        
     ## [13] dplyr_1.0.0         
     ## 
     ## loaded via a namespace (and not attached):
