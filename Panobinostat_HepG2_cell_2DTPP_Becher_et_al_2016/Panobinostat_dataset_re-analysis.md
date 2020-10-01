@@ -1,6 +1,6 @@
 Re-analysis of Panobinostat in-cell dataset by Becher et al, 2016
 ================
-29 September, 2020
+01 October, 2020
 
 # Step-by-step walk through the anlysis
 
@@ -406,7 +406,7 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.2 tidyr_1.1.0   TPP2D_1.5.10 
+    ## [1] gplots_3.0.3  readxl_1.3.1  ggplot2_3.3.2 tidyr_1.1.0   TPP2D_1.5.11 
     ## [6] dplyr_1.0.0  
     ## 
     ## loaded via a namespace (and not attached):
