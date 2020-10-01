@@ -1,8 +1,8 @@
 Analysis of GTP dataset
 ================
-29 September, 2020
+01 October, 2020
 
-# Step-by-step walk through the anlysis
+# Step-by-step walk through the analysis
 
 ``` r
 # This script uses the development version of TPP2D
@@ -34,14 +34,14 @@ library(TPP2D)
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ────────────────────────────── tidyverse 1.3.0 ──
+    ## ── Attaching packages ───────────────────────────── tidyverse 1.3.0 ──
 
     ## ✓ ggplot2 3.3.2     ✓ purrr   0.3.4
     ## ✓ tibble  3.0.1     ✓ stringr 1.4.0
     ## ✓ tidyr   1.1.0     ✓ forcats 0.5.0
     ## ✓ readr   1.3.1
 
-    ## ── Conflicts ───────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ──────────────────────────────── tidyverse_conflicts() ──
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
@@ -464,7 +464,7 @@ sessionInfo()
     ## other attached packages:
     ##  [1] ggupset_0.3.0   readxl_1.3.1    forcats_0.5.0   stringr_1.4.0  
     ##  [5] purrr_0.3.4     readr_1.3.1     tidyr_1.1.0     tibble_3.0.1   
-    ##  [9] ggplot2_3.3.2   tidyverse_1.3.0 TPP2D_1.5.10    dplyr_1.0.0    
+    ##  [9] ggplot2_3.3.2   tidyverse_1.3.0 TPP2D_1.5.11    dplyr_1.0.0    
     ## 
     ## loaded via a namespace (and not attached):
     ##  [1] Biobase_2.48.0       httr_1.4.1           bit64_0.9-7         

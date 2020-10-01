@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 reRun <- FALSE
 ```
 
-# Step-by-step walk through the anlysis
+# Step-by-step walk through the analysis
 
 ```{r eval = FALSE}
 # This script uses the development version of TPP2D
