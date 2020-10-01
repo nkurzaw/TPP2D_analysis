@@ -1,6 +1,6 @@
 Analysis of PCI-34051 dataset
 ================
-29 September, 2020
+01 October, 2020
 
 # Step-by-step walk through the `TPP2D` analysis
 
@@ -471,7 +471,7 @@ sessionInfo()
     ##  [1] org.Hs.eg.db_3.11.4    AnnotationDbi_1.50.0   IRanges_2.22.2        
     ##  [4] S4Vectors_0.26.1       Biobase_2.48.0         BiocGenerics_0.34.0   
     ##  [7] clusterProfiler_3.16.0 readxl_1.3.1           ggplot2_3.3.2         
-    ## [10] tidyr_1.1.0            TPP2D_1.5.10           dplyr_1.0.0           
+    ## [10] tidyr_1.1.0            TPP2D_1.5.11           dplyr_1.0.0           
     ## 
     ## loaded via a namespace (and not attached):
     ##  [1] bitops_1.0-6        enrichplot_1.8.1    bit64_0.9-7        
