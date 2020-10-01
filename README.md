@@ -1,5 +1,7 @@
 # TPP2D analysis
 
+[![DOI](https://zenodo.org/badge/250558162.svg)](https://zenodo.org/badge/latestdoi/250558162)
+
 This repository contains code to reproduce analyses performed by Kurzawa et al. 2020 to showcase the usage of the R package [`TPP2D`](https://bioconductor.org/packages/release/bioc/html/TPP2D.html) ([github](https://github.com/nkurzaw/TPP2D)) for analysis of 2D-Thermal proteome profiling experiments (2D-TPP) (Becher et al., 2016; Mateus et al., 2020).      
 
 ## Overview
