@@ -20,6 +20,7 @@ library(tidyverse)
 library(TPP2D)
 library(readxl)
 library(openxlsx)
+library(ggupset)
 ```
 
 # Main figures
@@ -126,8 +127,8 @@ ggplot(all_alpha_fdr_df, aes(alpha, mean_fdr)) +
   geom_abline(slope = 1, 
               color = "darkgray",
               linetype = "dashed") +
-  coord_cartesian(xlim = c(0, 0.2),
-                  ylim = c(0, 0.2)) +
+  coord_cartesian(xlim = c(0, 0.15),
+                  ylim = c(0, 0.15)) +
   scale_color_manual(
     "variant",
     values = c("deepskyblue4",
@@ -767,7 +768,7 @@ gtp_fdr_df <- getFDR(df_out = gtp_fstat_df,
                      squeezeDenominator = TRUE) %>% 
   mutate(clustername = gsub("^SEPT", "SEPTIN", clustername))
   
-gtp_hits_10per <- findHits(gtp_fdr_df, 0.1) 
+gtp_hits_df <- findHits(gtp_fdr_df, 0.1) 
 
 
 gtp_out_tab <- gtp_fdr_df %>% filter(dataset == "true") %>% 
@@ -776,11 +777,11 @@ gtp_out_tab <- gtp_fdr_df %>% filter(dataset == "true") %>%
                   rssH0, rssH1, kappa = slopeH1, F_statistic)%>% 
   mutate(stabilized_hit_at_10percent_FDR = 
            case_when(gene_name %in% 
-                       filter(gtp_hits_10per, slopeH1 > 0)$clustername ~ TRUE,
+                       filter(gtp_hits_df, slopeH1 > 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
          destabilized_hit_at_10percent_FDR = 
            case_when(gene_name %in% 
-                       filter(gtp_hits_10per, slopeH1 < 0)$clustername ~ TRUE,
+                       filter(gtp_hits_df, slopeH1 < 0)$clustername ~ TRUE,
                      TRUE ~ FALSE),
          GO_annotated_ATP_binder = case_when(
            gene_name %in% all_atp_binder$SYMBOL ~ TRUE, 
